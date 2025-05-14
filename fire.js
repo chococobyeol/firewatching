@@ -104,18 +104,21 @@ window.addEventListener('load', () => {
       this.y = fireCenterY - 15 * SCALE + Math.sin(angle) * ry * radius;
       // 초기 속도를 매우 느리게 설정 (더 느리게)
       this.vx = (Math.random() - 0.5) * 0.1;
-      // 초기 상승 속도를 매우 느리게 설정 (더 느리게)
-      this.vy = (Math.random() * 0.7) * SCALE;
-      // 가속도 증가: 빨라지는 속도를 더 빠르게
-      this.accel = -0.08 * SCALE;
+      // 지수적 상승 모델 적용
+      // 목표 속도(terminal velocity)를 설정
+      this.vTerminal = -(Math.random() * 2 + 1.8) * SCALE;
+      // 초기 속도 0으로 시작
+      this.vy = 0.5;
+      // 시간 상수(Frame 수) 설정: 속도 회복 속도 제어
+      this.tau = 30;
       this.life = Math.random() * 30 + 30;
       // 클릭 효과 크기 반영
       this.size = (Math.random() * 10 + 10) * (1 + clickEffect * 2) * SCALE;
       this.maxLife = this.life;
     }
     update() {
-      // 가속 적용 후 위치 업데이트
-      this.vy += this.accel;
+      // 지수 모델: vy를 vTerminal로 지수 수렴
+      this.vy += (this.vTerminal - this.vy) / this.tau;
       this.x += this.vx;
       this.y += this.vy;
       this.life--;
