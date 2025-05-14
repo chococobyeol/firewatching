@@ -65,22 +65,22 @@ window.addEventListener('load', () => {
   controls.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;">
       <label style="margin-bottom:4px;">불꽃 강도</label>
-      <input id="fireStrength" type="range" min="0.5" max="2" step="0.01" value="1" style="width:120px;">
+      <input id="fireStrength" type="range" min="0.5" max="3.5" step="0.01" value="2" style="width:120px;">
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;">
       <label style="margin-bottom:4px;">빛무리 크기</label>
-      <input id="glowSize" type="range" min="0.5" max="2" step="0.01" value="1" style="width:120px;">
+      <input id="glowSize" type="range" min="0" max="1" step="0.01" value="0.5" style="width:120px;">
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;">
       <label style="margin-bottom:4px;">빛무리 밝기</label>
-      <input id="glowAlpha" type="range" min="0.05" max="0.5" step="0.01" value="0.18" style="width:120px;">
+      <input id="glowAlpha" type="range" min="0" max="0.1" step="0.01" value="0.05" style="width:120px;">
     </div>
   `;
   document.body.appendChild(controls);
 
-  let fireStrength = 1;
-  let glowSize = 1;
-  let glowAlpha = 0.18;
+  let fireStrength = 2;
+  let glowSize = 0.5;
+  let glowAlpha = 0.05;
 
   document.getElementById('fireStrength').addEventListener('input', e => {
     fireStrength = parseFloat(e.target.value);
@@ -95,31 +95,44 @@ window.addEventListener('load', () => {
   // 파티클 클래스 정의
   class Particle {
     constructor() {
-      this.x = fireCenterX + (Math.random() - 0.5) * 50 * SCALE;
-      this.y = fireCenterY;
-      this.vx = (Math.random() - 0.5) * 1;
-      this.vy = -Math.random() * 2 - 1;
+      // 타원 형태로 시작 위치 분포
+      const angle = Math.random() * 2 * Math.PI;
+      const radius = Math.sqrt(Math.random());
+      const rx = 30 * SCALE;
+      const ry = 10 * SCALE;
+      this.x = fireCenterX + Math.cos(angle) * rx * radius;
+      this.y = fireCenterY - 15 * SCALE + Math.sin(angle) * ry * radius;
+      // 초기 속도를 매우 느리게 설정 (더 느리게)
+      this.vx = (Math.random() - 0.5) * 0.1;
+      // 초기 상승 속도를 매우 느리게 설정 (더 느리게)
+      this.vy = (Math.random() * 0.7) * SCALE;
+      // 가속도 증가: 빨라지는 속도를 더 빠르게
+      this.accel = -0.08 * SCALE;
       this.life = Math.random() * 30 + 30;
       // 클릭 효과 크기 반영
       this.size = (Math.random() * 10 + 10) * (1 + clickEffect * 2) * SCALE;
       this.maxLife = this.life;
     }
     update() {
+      // 가속 적용 후 위치 업데이트
+      this.vy += this.accel;
       this.x += this.vx;
       this.y += this.vy;
       this.life--;
       this.size += 0.1;
     }
     draw() {
+      // 생명비율 계산 및 플리커 효과 추가
       const lifeRatio = this.life / this.maxLife;
+      const flick = 0.7 + Math.random() * 0.3;
       // 그라데이션 생성
       const grad = ctx.createRadialGradient(
         this.x, this.y, 0,
         this.x, this.y, this.size
       );
-      grad.addColorStop(0, `rgba(255, 255, 200, ${lifeRatio})`);
-      grad.addColorStop(0.3, `rgba(255, 150,   0, ${lifeRatio * 0.8})`);
-      grad.addColorStop(0.6, `rgba(255,  80,   0, ${lifeRatio * 0.6})`);
+      grad.addColorStop(0, `rgba(255, 255, 200, ${lifeRatio * flick})`);
+      grad.addColorStop(0.3, `rgba(255, 150,   0, ${lifeRatio * 0.8 * flick})`);
+      grad.addColorStop(0.6, `rgba(255,  80,   0, ${lifeRatio * 0.6 * flick})`);
       grad.addColorStop(1, `rgba(0,    0,    0, 0)`);
 
       ctx.fillStyle = grad;
@@ -131,9 +144,10 @@ window.addEventListener('load', () => {
 
   const particles = [];
   function spawnParticle() {
-    // 매 프레임마다 몇 개의 파티클 생성
+    // 매 프레임마다 몇 개의 파티클 생성 (생성 속도 감소)
     // 클릭 효과에 따라 파티클 수 증가
-    const count = Math.floor((Math.random() * 2 + 1) * (1 + clickEffect * 5) * fireStrength);
+    // 기본 파티클 수를 줄여 깜빡임 완화
+    const count = Math.floor((Math.random() * 2) * (1 + clickEffect * 5) * fireStrength);
     for (let i = 0; i < count; i++) {
       particles.push(new Particle());
     }
