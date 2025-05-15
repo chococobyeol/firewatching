@@ -214,7 +214,7 @@ window.addEventListener('load', () => {
 
   // 슬라이더 기본값 초기화
   let fireStrength = 2.75;
-  let glowSize = 0.5;
+  let glowSize = 1;
   let glowAlpha = 0.05;
   let soundVolume = 0.5; // 기본 볼륨값 추가
 
@@ -278,7 +278,7 @@ window.addEventListener('load', () => {
       
       <div class="setting-group">
         <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 크기</label>
-        <input id="glowSize" type="range" min="0" max="1" step="0.01" value="${glowSize}" 
+        <input id="glowSize" type="range" min="0" max="2" step="0.01" value="${glowSize}" 
                style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
       </div>
       
@@ -652,7 +652,7 @@ window.addEventListener('load', () => {
       this.vy = -(Math.random() * 0.5 + 0.3) * SCALE;
       
       // 투명도와 크기 (투명도 매우 낮게 설정)
-      this.alpha = 0.03 + Math.random() * 0.03;
+      this.alpha = 0.05 + Math.random() * 0.04;
       this.size = (Math.random() * 15 + 25) * SCALE;
       
       // 수명
@@ -737,8 +737,8 @@ window.addEventListener('load', () => {
   function spawnSmoke() {
     if (!isFireLit || !isSmokeEnabled) return;
     
-    // 연기 생성 빈도 감소
-    if (Math.random() < 0.05 * fireStrength) {
+    // 연기 생성 빈도 증가
+    if (Math.random() < 0.08 * fireStrength) {
       smokeParticles.push(new SmokeParticle());
     }
   }
