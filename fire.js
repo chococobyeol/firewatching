@@ -27,10 +27,13 @@ window.addEventListener('load', () => {
 
   function generateStars() {
     stars = [];
+    // CSS 픽셀 기준 크기 계산
+    const cssWidth = window.innerWidth;
+    const cssHeight = window.innerHeight;
     for (let i = 0; i < numStars; i++) {
       // 기본 알파, 깜빡임 주파수와 위상 설정
       const baseAlpha = Math.random() * 0.8 + 0.2;
-      stars.push({ x: Math.random() * bgCanvas.width, y: Math.random() * bgCanvas.height, radius: Math.random() * 1.2 + 0.3,
+      stars.push({ x: Math.random() * cssWidth, y: Math.random() * cssHeight, radius: Math.random() * 1.2 + 0.3,
                    baseAlpha: baseAlpha,
                    twinkleFreq: Math.random() * 2 + 1, // 1~3Hz 범위
                    twinklePhase: Math.random() * Math.PI * 2 });
@@ -38,18 +41,21 @@ window.addEventListener('load', () => {
   }
 
   function drawStars() {
+    // CSS 픽셀 기준 크기 계산
+    const cssWidth = window.innerWidth;
+    const cssHeight = window.innerHeight;
     if (!isSkyEnabled) {
-      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      bgCtx.clearRect(0, 0, cssWidth, cssHeight);
       return;
     }
     // 배경 클리어 및 기본 검은 배경 채우기
-    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-    // 대체: Rayleigh scattering 기반 하늘 그라디언트 (출처: https://en.wikipedia.org/wiki/Rayleigh_scattering)
-    const skyGradient = bgCtx.createLinearGradient(0, 0, 0, bgCanvas.height);
+    bgCtx.clearRect(0, 0, cssWidth, cssHeight);
+    // 대체: Rayleigh 산란 기반 그라디언트 (출처: https://en.wikipedia.org/wiki/Rayleigh_scattering)
+    const skyGradient = bgCtx.createLinearGradient(0, 0, 0, cssHeight);
     skyGradient.addColorStop(0, '#0b1a34');
     skyGradient.addColorStop(1, '#000007');
     bgCtx.fillStyle = skyGradient;
-    bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+    bgCtx.fillRect(0, 0, cssWidth, cssHeight);
     // 별 그리기 (밤하늘)
     const t = performance.now() / 1000;
     stars.forEach(star => {
@@ -63,15 +69,14 @@ window.addEventListener('load', () => {
     });
     // 배경 이미지 그리기 (배경 레이어)
     if (isBgEnabled && bgImg.complete) {
-      // 화면이 가로로 넓을 때는 가로 stretch, 세로는 canvas 높이에 맞춤
-      if (bgCanvas.width > bgCanvas.height) {
-        bgCtx.drawImage(bgImg, 0, 0, bgCanvas.width, bgCanvas.height);
+      // 배경 이미지 그리기 (CSS 픽셀 기준)
+      if (cssWidth > cssHeight) {
+        bgCtx.drawImage(bgImg, 0, 0, cssWidth, cssHeight);
       } else {
-        // 화면이 세로로 길 때는 높이에 맞춰 비율 유지, 가로는 center
-        const scale = bgCanvas.height / bgImg.height;
+        const scale = cssHeight / bgImg.height;
         const w = bgImg.width * scale;
-        const h = bgCanvas.height;
-        const x = (bgCanvas.width - w) / 2;
+        const h = cssHeight;
+        const x = (cssWidth - w) / 2;
         bgCtx.drawImage(bgImg, x, 0, w, h);
       }
     }
