@@ -42,45 +42,56 @@ window.addEventListener('load', () => {
     clickEffect = 1;
   });
 
-  // 슬라이더 UI 추가
-  const controls = document.createElement('div');
-  controls.id = 'controls';
-  controls.style.position = 'fixed';
-  controls.style.top = '20px';
-  controls.style.left = '50%';
-  controls.style.transform = 'translateX(-50%)';
-  controls.style.background = 'rgba(0,0,0,0.4)';
-  controls.style.padding = '16px 24px';
-  controls.style.borderRadius = '12px';
-  controls.style.zIndex = '100';
-  controls.style.color = '#fff';
-  controls.style.display = 'flex';
-  controls.style.flexDirection = 'row';
-  controls.style.alignItems = 'center';
-  controls.style.gap = '24px';
-  controls.style.fontSize = '16px';
-  controls.style.backdropFilter = 'blur(4px)';
-  controls.style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)';
-  controls.style.maxWidth = '90vw';
-  controls.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;">
-      <label style="margin-bottom:4px;">불꽃 강도</label>
-      <input id="fireStrength" type="range" min="0.5" max="3.5" step="0.01" value="2" style="width:120px;">
-    </div>
-    <div style="display:flex;flex-direction:column;align-items:center;">
-      <label style="margin-bottom:4px;">빛무리 크기</label>
-      <input id="glowSize" type="range" min="0" max="1" step="0.01" value="0.5" style="width:120px;">
-    </div>
-    <div style="display:flex;flex-direction:column;align-items:center;">
-      <label style="margin-bottom:4px;">빛무리 밝기</label>
-      <input id="glowAlpha" type="range" min="0" max="0.1" step="0.01" value="0.05" style="width:120px;">
-    </div>
-  `;
-  document.body.appendChild(controls);
-
+  // slider 기본값 초기화
   let fireStrength = 2;
   let glowSize = 0.5;
   let glowAlpha = 0.05;
+
+  // 설정 버튼 및 사이드바 추가
+  const settingsBtn = document.createElement('button');
+  settingsBtn.id = 'settingsBtn';
+  settingsBtn.textContent = '⚙️ 설정';
+  settingsBtn.style.position = 'fixed';
+  settingsBtn.style.top = '20px';
+  settingsBtn.style.right = '20px';
+  settingsBtn.style.padding = '8px 12px';
+  settingsBtn.style.zIndex = '100';
+  document.body.appendChild(settingsBtn);
+
+  const sidebar = document.createElement('div');
+  sidebar.id = 'settingsSidebar';
+  sidebar.style.position = 'fixed';
+  sidebar.style.top = '0';
+  sidebar.style.right = '-280px';
+  sidebar.style.width = '280px';
+  sidebar.style.height = '100%';
+  sidebar.style.background = 'rgba(0,0,0,0.8)';
+  sidebar.style.padding = '20px';
+  sidebar.style.boxShadow = '-2px 0 8px rgba(0,0,0,0.5)';
+  sidebar.style.transition = 'right 0.3s ease';
+  sidebar.innerHTML = `
+    <h3 style="color:#fff; margin-bottom:16px;">설정</h3>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <label style="color:#fff;">불꽃 강도
+        <input id="fireStrength" type="range" min="0.5" max="3.5" step="0.01" value="${fireStrength}" style="width:100%;">
+      </label>
+      <label style="color:#fff;">빛무리 크기
+        <input id="glowSize" type="range" min="0" max="1" step="0.01" value="${glowSize}" style="width:100%;">
+      </label>
+      <label style="color:#fff;">빛무리 밝기
+        <input id="glowAlpha" type="range" min="0" max="0.1" step="0.01" value="${glowAlpha}" style="width:100%;">
+      </label>
+    </div>
+  `;
+  document.body.appendChild(sidebar);
+
+  settingsBtn.addEventListener('click', () => {
+    if (sidebar.style.right === '0px') {
+      sidebar.style.right = '-280px';
+    } else {
+      sidebar.style.right = '0px';
+    }
+  });
 
   document.getElementById('fireStrength').addEventListener('input', e => {
     fireStrength = parseFloat(e.target.value);
@@ -177,6 +188,75 @@ window.addEventListener('load', () => {
     ctx.globalCompositeOperation = 'source-over';
   }
 
+  // 스파크(불똥) 클래스 정의
+  class Spark {
+    constructor() {
+      // 퍼짐 영역을 축소하여 너무 멀리 튀어나가지 않도록 설정
+      const spread = 40 * SCALE;
+      this.x = fireCenterX + (Math.random() - 0.5) * spread;
+      this.y = fireCenterY;
+      // 수평 속도 범위를 줄여 멀리 튀지 않도록 설정
+      this.vx = (Math.random() - 0.5) * 4;
+      // 초기 상승 속도를 줄여 비행 거리를 제한
+      this.vy = -(Math.random() * 7 + 1) * SCALE;
+      this.life = Math.random() * 20 + 20;
+      // 크기를 줄여 좀 더 작은 스파크 표현
+      this.size = Math.random() * 3 + 0.5;
+      // 관성: 크기에 비례 (입자가 크면 난류·항력·소용돌이 영향 감소)
+      this.inertia = this.size;
+      // Ornstein–Uhlenbeck 난류 모델 파라미터 초기화
+      this.ouTau = 20;   // 에디스 시간 상수 (프레임 단위)
+      this.ouSigma = 0.2 * SCALE;   // 난류 강도를 줄여 궤적 범위 제한
+      this.ouVx = 0;     // x 방향 난류 속도 편차
+      this.ouVy = 0;     // y 방향 난류 속도 편차
+      // 소용돌이 방향 랜덤 설정 (1 또는 -1)
+      this.swirlDir = Math.random() < 0.5 ? 1 : -1;
+      this.maxLife = this.life;
+    }
+    update() {
+      // Ornstein–Uhlenbeck 난류 모델 적용 (관성 반영)
+      const dt = 1;
+      const sigmaScaled = this.ouSigma / this.inertia;
+      const randVx = (Math.random() - 0.5) * 1;
+      const randVy = (Math.random() - 0.5) * 1;
+      this.ouVx += -(this.ouVx / this.ouTau) * dt + sigmaScaled * randVx * Math.sqrt(dt);
+      this.ouVy += -(this.ouVy / this.ouTau) * dt + sigmaScaled * randVy * Math.sqrt(dt);
+      this.vx += this.ouVx;
+      this.vy += this.ouVy;
+
+      // 공기 저항 및 난류, 중력 적용 (관성 반영)
+      const drag = 0.02 / this.inertia;
+      const turbulence = ((Math.random() - 0.5) * 0.2) / this.inertia;
+      this.vx = this.vx * (1 - drag) + turbulence;
+      this.vy += 0.1 * SCALE;
+      this.vy *= (1 - drag);
+
+      // 소용돌이 효과 (관성 반영)
+      const swirlStrength = (0.01 * SCALE) / this.inertia;
+      const vxOld = this.vx;
+      const vyOld = this.vy;
+      this.vx += -vyOld * swirlStrength * this.swirlDir;
+      this.vy += vxOld * swirlStrength * this.swirlDir;
+
+      // 위치 업데이트 및 생명 감소
+      this.x += this.vx;
+      this.y += this.vy;
+      this.life--;
+    }
+    draw() {
+      const alpha = this.life / this.maxLife;
+      ctx.fillStyle = `rgba(255,220,150,${alpha})`;
+      ctx.fillRect(this.x, this.y, this.size, this.size);
+    }
+  }
+
+  const sparks = [];
+  function spawnSpark() {
+    if (Math.random() < 0.02 * fireStrength) {
+      sparks.push(new Spark());
+    }
+  }
+
   function animate() {
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
@@ -191,12 +271,21 @@ window.addEventListener('load', () => {
 
     ctx.globalCompositeOperation = 'lighter';
     spawnParticle();
+    spawnSpark();
 
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.update();
       p.draw();
       if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    // 스파크 업데이트 및 그리기
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i];
+      s.update();
+      s.draw();
+      if (s.life <= 0) sparks.splice(i, 1);
     }
 
     requestAnimationFrame(animate);
