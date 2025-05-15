@@ -111,44 +111,120 @@ window.addEventListener('load', () => {
   // 설정 버튼 및 사이드바 추가
   const settingsBtn = document.createElement('button');
   settingsBtn.id = 'settingsBtn';
-  settingsBtn.textContent = '⚙️ 설정';
+  settingsBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
   settingsBtn.style.position = 'fixed';
   settingsBtn.style.top = '20px';
   settingsBtn.style.right = '20px';
-  settingsBtn.style.padding = '8px 12px';
+  settingsBtn.style.padding = '12px';
+  settingsBtn.style.borderRadius = '50%';
+  settingsBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+  settingsBtn.style.color = '#fff';
+  settingsBtn.style.border = 'none';
+  settingsBtn.style.cursor = 'pointer';
   settingsBtn.style.zIndex = '100';
+  settingsBtn.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+  settingsBtn.style.transition = 'transform 0.3s ease, background-color 0.3s';
+  
+  // 호버 효과 추가
+  settingsBtn.addEventListener('mouseover', () => {
+    settingsBtn.style.backgroundColor = 'rgba(50, 50, 50, 0.8)';
+    settingsBtn.style.transform = 'scale(1.1)';
+  });
+  settingsBtn.addEventListener('mouseout', () => {
+    settingsBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+    settingsBtn.style.transform = 'scale(1)';
+  });
+  
   document.body.appendChild(settingsBtn);
 
   const sidebar = document.createElement('div');
   sidebar.id = 'settingsSidebar';
   sidebar.style.position = 'fixed';
   sidebar.style.top = '0';
-  sidebar.style.right = '-280px';
-  sidebar.style.width = '280px';
+  sidebar.style.right = '-300px';
+  sidebar.style.width = '300px';
   sidebar.style.height = '100%';
-  sidebar.style.background = 'rgba(0,0,0,0.8)';
+  sidebar.style.background = 'rgba(20, 20, 20, 0.9)';
   sidebar.style.padding = '20px';
-  sidebar.style.boxShadow = '-2px 0 8px rgba(0,0,0,0.5)';
+  sidebar.style.boxShadow = '-2px 0 15px rgba(0, 0, 0, 0.5)';
   sidebar.style.transition = 'right 0.3s ease';
+  sidebar.style.zIndex = '101';
+  sidebar.style.backdropFilter = 'blur(10px)';
+  sidebar.style.fontFamily = "'Arial', sans-serif";
+
+  // 사이드바 내용 스타일링 개선
   sidebar.innerHTML = `
-    <h3 style="color:#fff; margin-bottom:16px;">설정</h3>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <label style="color:#fff;">불꽃 강도
-        <input id="fireStrength" type="range" min="0.5" max="5.0" step="0.01" value="${fireStrength}" style="width:100%;">
-      </label>
-      <label style="color:#fff;">빛무리 크기
-        <input id="glowSize" type="range" min="0" max="1" step="0.01" value="${glowSize}" style="width:100%;">
-      </label>
-      <label style="color:#fff;">빛무리 밝기
-        <input id="glowAlpha" type="range" min="0" max="0.1" step="0.01" value="${glowAlpha}" style="width:100%;">
-      </label>
-      <label style="color:#fff;">소리 볼륨
-        <input id="soundVolume" type="range" min="0" max="1" step="0.01" value="${soundVolume}" style="width:100%;">
-      </label>
-      <button id="muteBtn" style="margin-top:8px;padding:8px 12px;">🔇 음소거</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:16px;">
+      <h3 style="color:#fff;margin:0;font-size:18px;font-weight:600;">캠프파이어 설정</h3>
+      <button id="closeSettings" style="background:none;border:none;color:#fff;cursor:pointer;font-size:24px;padding:0;">&times;</button>
+    </div>
+    
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <div class="setting-group">
+        <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">불꽃 강도</label>
+        <input id="fireStrength" type="range" min="0.5" max="5.0" step="0.01" value="${fireStrength}" 
+               style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+      </div>
+      
+      <div class="setting-group">
+        <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 크기</label>
+        <input id="glowSize" type="range" min="0" max="1" step="0.01" value="${glowSize}" 
+               style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+      </div>
+      
+      <div class="setting-group">
+        <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 밝기</label>
+        <input id="glowAlpha" type="range" min="0" max="0.1" step="0.01" value="${glowAlpha}" 
+               style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+      </div>
+      
+      <div class="setting-group" style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.2);padding-top:16px;">
+        <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">소리 볼륨</label>
+        <input id="soundVolume" type="range" min="0" max="1" step="0.01" value="${soundVolume}" 
+               style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+      </div>
+      
+      <button id="muteBtn" style="margin-top:10px;padding:10px;border:none;border-radius:4px;background-color:rgba(50,50,50,0.7);color:#fff;cursor:pointer;transition:background-color 0.3s;font-size:14px;">
+        🔇 음소거
+      </button>
+    </div>
+    
+    <div style="position:absolute;bottom:20px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.5);font-size:12px;">
+      <p>화면을 클릭하여 불을 켜보세요!</p>
     </div>
   `;
   document.body.appendChild(sidebar);
+  
+  // 슬라이더 스타일 추가
+  const style = document.createElement('style');
+  style.textContent = `
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 15px;
+      width: 15px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    input[type=range]::-moz-range-thumb {
+      height: 15px;
+      width: 15px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    #muteBtn:hover {
+      background-color: rgba(70,70,70,0.9);
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // 닫기 버튼 이벤트
+  document.getElementById('closeSettings').addEventListener('click', () => {
+    sidebar.style.right = '-300px';
+  });
 
   // 첫 클릭시 오디오 재생 시작
   const startAudio = () => {
@@ -163,7 +239,7 @@ window.addEventListener('load', () => {
 
   settingsBtn.addEventListener('click', () => {
     if (sidebar.style.right === '0px') {
-      sidebar.style.right = '-280px';
+      sidebar.style.right = '-300px';
     } else {
       sidebar.style.right = '0px';
     }
