@@ -130,8 +130,15 @@ window.addEventListener('load', () => {
     update() {
       // 지수 모델: vy를 vTerminal로 지수 수렴
       this.vy += (this.vTerminal - this.vy) / this.tau;
+      // 난류 효과: 생명비율 감소에 따라 난류 강도 증가
+      const lifeRatio = this.life / this.maxLife;
+      const turbulence = 0.3 * SCALE * (1 - lifeRatio);
+      this.vx += (Math.random() - 0.5) * turbulence;
+      this.vy += (Math.random() - 0.5) * turbulence * 0.5;
+      // 위치 업데이트
       this.x += this.vx;
       this.y += this.vy;
+      // 수명 및 크기 변화
       this.life--;
       this.size += 0.1;
     }
