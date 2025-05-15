@@ -25,6 +25,8 @@ window.addEventListener('load', () => {
   let isFireLit = false;
   // 자동 재생 대신 사용자 상호작용 후 재생 시작
   let isMuted = false;
+  // 연기 효과 활성화 여부
+  let isSmokeEnabled = true;
 
   let fireCenterX, fireCenterY, logsX, logsY, logsWidth, logsHeight;
   const logsScale = 0.1;
@@ -184,9 +186,15 @@ window.addEventListener('load', () => {
                style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
       </div>
       
-      <button id="muteBtn" style="margin-top:10px;padding:10px;border:none;border-radius:4px;background-color:rgba(50,50,50,0.7);color:#fff;cursor:pointer;transition:background-color 0.3s;font-size:14px;">
-        🔇 음소거
-      </button>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button id="muteBtn" style="flex:1;padding:10px;border:none;border-radius:4px;background-color:rgba(50,50,50,0.7);color:#fff;cursor:pointer;transition:all 0.3s;font-size:14px;">
+          🔇 음소거
+        </button>
+        
+        <button id="toggleSmokeBtn" style="flex:1;padding:10px;border:none;border-radius:4px;background-color:rgba(50,50,50,0.7);color:#fff;cursor:pointer;transition:all 0.3s;font-size:14px;">
+          💨 연기 켜짐
+        </button>
+      </div>
     </div>
     
     <div style="position:absolute;bottom:20px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.5);font-size:12px;">
@@ -282,6 +290,19 @@ window.addEventListener('load', () => {
     }
   });
 
+  // 연기 온오프 버튼 기능 추가
+  const toggleSmokeBtn = document.getElementById('toggleSmokeBtn');
+  toggleSmokeBtn.addEventListener('click', () => {
+    isSmokeEnabled = !isSmokeEnabled;
+    if (isSmokeEnabled) {
+      toggleSmokeBtn.innerHTML = '💨 연기 켜짐';
+    } else {
+      toggleSmokeBtn.innerHTML = '🚫 연기 꺼짐';
+      // 연기 끌 때 현재 있는 연기도 함께 제거
+      smokeParticles.length = 0;
+    }
+  });
+
   // 파티클 클래스 정의
   class Particle {
     constructor() {
@@ -354,6 +375,107 @@ window.addEventListener('load', () => {
     const count = Math.floor((Math.random() * 2) * (1 + clickEffect * 5) * fireStrength);
     for (let i = 0; i < count; i++) {
       particles.push(new Particle());
+    }
+  }
+
+  // 연기 파티클 클래스 정의
+  class SmokeParticle {
+    constructor() {
+      // 불꽃 중심 약간 위에서 생성
+      const spread = 25 * SCALE;
+      this.x = fireCenterX + (Math.random() - 0.5) * spread;
+      this.y = fireCenterY - 50 * SCALE;
+      
+      // 속도 - 연기는 천천히 상승
+      this.vx = (Math.random() - 0.5) * 0.3;
+      this.vy = -(Math.random() * 0.5 + 0.3) * SCALE;
+      
+      // 투명도와 크기 (투명도 매우 낮게 설정)
+      this.alpha = 0.03 + Math.random() * 0.03;
+      this.size = (Math.random() * 15 + 25) * SCALE;
+      
+      // 수명
+      this.life = Math.random() * 180 + 100;
+      this.maxLife = this.life;
+      
+      // 회전
+      this.rotation = Math.random() * Math.PI * 2;
+      this.rotationSpeed = (Math.random() - 0.5) * 0.01;
+      
+      // 향상된 난류 모델 파라미터
+      this.turbulenceAmplitude = 0.1;
+      this.turbulencePhase1 = Math.random() * Math.PI * 2;
+      this.turbulencePhase2 = Math.random() * Math.PI * 2;
+      this.turbulenceFreq1 = 0.01 + Math.random() * 0.01;
+      this.turbulenceFreq2 = 0.01 + Math.random() * 0.01;
+    }
+    
+    update() {
+      // 복합 난류 계산 (더 자연스러운 움직임을 위해 여러 주파수의 사인파 조합)
+      const noise1 = Math.sin(this.turbulencePhase1) * this.turbulenceAmplitude;
+      const noise2 = Math.sin(this.turbulencePhase2 * 2.7) * (this.turbulenceAmplitude * 0.6);
+      const noise3 = Math.cos(this.turbulencePhase1 * 1.3) * (this.turbulenceAmplitude * 0.4);
+      
+      // 위치 업데이트 - 복합 난류 적용
+      this.x += this.vx + noise1 + noise2;
+      this.y += this.vy + noise3;
+      
+      // 난류 페이즈 업데이트 (다른 속도로 업데이트)
+      this.turbulencePhase1 += this.turbulenceFreq1;
+      this.turbulencePhase2 += this.turbulenceFreq2;
+      
+      // 회전
+      this.rotation += this.rotationSpeed;
+      
+      // 크기 약간 증가 (퍼짐 효과) - 연기가 상승할수록 더 많이 퍼짐
+      const lifeRatio = this.life / this.maxLife;
+      this.size += 0.2 * (1.2 - lifeRatio); // 수명이 줄어들수록 더 빠르게 퍼짐
+      
+      // 투명도 감소 - 처음에는 천천히, 나중에는 빠르게
+      this.alpha *= 0.985;
+      
+      // 수명 감소
+      this.life--;
+    }
+    
+    draw() {
+      const lifeRatio = this.life / this.maxLife;
+      
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rotation);
+      
+      // 더 부드러운 그라디언트 생성을 위해 더 많은 색상 단계 사용
+      const smokeGrad = ctx.createRadialGradient(
+        0, 0, 0,
+        0, 0, this.size
+      );
+      
+      // 연기 색상 - 더 부드러운 그라디언트와 더 많은 색상 단계, 매우 옅은 알파값
+      const alphaValue = this.alpha * lifeRatio;
+      smokeGrad.addColorStop(0, `rgba(180, 180, 180, ${alphaValue * 0.7})`);
+      smokeGrad.addColorStop(0.2, `rgba(170, 170, 170, ${alphaValue * 0.65})`);
+      smokeGrad.addColorStop(0.4, `rgba(150, 150, 150, ${alphaValue * 0.5})`);
+      smokeGrad.addColorStop(0.6, `rgba(130, 130, 130, ${alphaValue * 0.4})`);
+      smokeGrad.addColorStop(0.8, `rgba(100, 100, 100, ${alphaValue * 0.2})`);
+      smokeGrad.addColorStop(1, `rgba(80, 80, 80, 0)`);
+      
+      ctx.fillStyle = smokeGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.restore();
+    }
+  }
+
+  const smokeParticles = [];
+  function spawnSmoke() {
+    if (!isFireLit || !isSmokeEnabled) return;
+    
+    // 연기 생성 빈도 감소
+    if (Math.random() < 0.05 * fireStrength) {
+      smokeParticles.push(new SmokeParticle());
     }
   }
 
@@ -465,6 +587,7 @@ window.addEventListener('load', () => {
     ctx.globalCompositeOperation = 'lighter';
     spawnParticle();
     spawnSpark();
+    spawnSmoke();
 
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
@@ -479,6 +602,15 @@ window.addEventListener('load', () => {
       s.update();
       s.draw();
       if (s.life <= 0) sparks.splice(i, 1);
+    }
+    
+    // 연기 파티클 렌더링 (source-over 블렌딩 모드로 변경)
+    ctx.globalCompositeOperation = 'source-over';
+    for (let i = smokeParticles.length - 1; i >= 0; i--) {
+      const sp = smokeParticles[i];
+      sp.update();
+      sp.draw();
+      if (sp.life <= 0) smokeParticles.splice(i, 1);
     }
 
     requestAnimationFrame(animate);
