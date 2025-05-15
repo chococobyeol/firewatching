@@ -43,7 +43,7 @@ window.addEventListener('load', () => {
   });
 
   // slider 기본값 초기화
-  let fireStrength = 2;
+  let fireStrength = 2.75;
   let glowSize = 0.5;
   let glowAlpha = 0.05;
 
@@ -73,7 +73,7 @@ window.addEventListener('load', () => {
     <h3 style="color:#fff; margin-bottom:16px;">설정</h3>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <label style="color:#fff;">불꽃 강도
-        <input id="fireStrength" type="range" min="0.5" max="3.5" step="0.01" value="${fireStrength}" style="width:100%;">
+        <input id="fireStrength" type="range" min="0.5" max="5.0" step="0.01" value="${fireStrength}" style="width:100%;">
       </label>
       <label style="color:#fff;">빛무리 크기
         <input id="glowSize" type="range" min="0" max="1" step="0.01" value="${glowSize}" style="width:100%;">
@@ -112,7 +112,7 @@ window.addEventListener('load', () => {
       const rx = 30 * SCALE;
       const ry = 10 * SCALE;
       this.x = fireCenterX + Math.cos(angle) * rx * radius;
-      this.y = fireCenterY - 15 * SCALE + Math.sin(angle) * ry * radius;
+      this.y = fireCenterY - 10 * SCALE + Math.sin(angle) * ry * radius;
       // 초기 속도를 매우 느리게 설정 (더 느리게)
       this.vx = (Math.random() - 0.5) * 0.1;
       // 지수적 상승 모델 적용
@@ -151,9 +151,10 @@ window.addEventListener('load', () => {
         this.x, this.y, 0,
         this.x, this.y, this.size
       );
-      grad.addColorStop(0, `rgba(255, 255, 200, ${lifeRatio * flick})`);
-      grad.addColorStop(0.3, `rgba(255, 150,   0, ${lifeRatio * 0.8 * flick})`);
-      grad.addColorStop(0.6, `rgba(255,  80,   0, ${lifeRatio * 0.6 * flick})`);
+      // 부드럽고 은은한 애니메이션 캠프파이어 색상
+      grad.addColorStop(0, `rgba(255, 230, 120, ${lifeRatio * flick * 0.6})`);
+      grad.addColorStop(0.3, `rgba(255, 140,  50, ${lifeRatio * flick * 0.5})`);
+      grad.addColorStop(0.6, `rgba(200,  70,  20, ${lifeRatio * flick * 0.3})`);
       grad.addColorStop(1, `rgba(0,    0,    0, 0)`);
 
       ctx.fillStyle = grad;
