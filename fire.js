@@ -1,6 +1,68 @@
 window.addEventListener('load', () => {
+  // 기존 HTML의 빈 canvas 제거 (id="fireCanvas")
+  const oldCanvas = document.getElementById('fireCanvas');
+  if (oldCanvas) oldCanvas.remove();
+  // 밤하늘 배경용 캔버스 생성 (z-index 0)
+  const bgCanvas = document.createElement('canvas');
+  bgCanvas.id = 'bgCanvas';
+  bgCanvas.style.position = 'absolute';
+  bgCanvas.style.top = '0';
+  bgCanvas.style.left = '0';
+  bgCanvas.style.width = '100%';
+  bgCanvas.style.height = '100%';
+  bgCanvas.style.pointerEvents = 'none';
+  bgCanvas.style.zIndex = '0';
+  document.body.appendChild(bgCanvas);
+  // 배경 이미지 로드 (밤하늘 다음 레이어)에러 방지를 위해 drawStars 전에 선언
+  const bgImg = new Image();
+  bgImg.src = 'images/background.png';
+  const bgCtx = bgCanvas.getContext('2d');
+
+  // 밤하늘 설정
+  let isSkyEnabled = true;
+  // 배경 이미지 표시 여부
+  let isBgEnabled = true;
+  const numStars = 300;
+  let stars = [];
+
+  function generateStars() {
+    stars = [];
+    for (let i = 0; i < numStars; i++) {
+      stars.push({ x: Math.random() * bgCanvas.width, y: Math.random() * bgCanvas.height, radius: Math.random() * 1.2 + 0.3, alpha: Math.random() * 0.8 + 0.2 });
+    }
+  }
+
+  function drawStars() {
+    if (!isSkyEnabled) {
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      return;
+    }
+    // 배경 클리어 및 기본 검은 배경 채우기
+    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    bgCtx.fillStyle = '#000';
+    bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+    // 별 그리기 (밤하늘)
+    stars.forEach(star => {
+      bgCtx.beginPath();
+      bgCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+      bgCtx.fillStyle = `rgba(255,255,255,${star.alpha})`;
+      bgCtx.fill();
+    });
+    // 배경 이미지 그리기 (배경 레이어)
+    if (isBgEnabled && bgImg.complete) {
+      bgCtx.drawImage(bgImg, 0, 0, bgCanvas.width, bgCanvas.height);
+    }
+  }
+
+  generateStars();
+  drawStars();
   // 캔버스 생성 및 초기 설정
   const canvas = document.createElement('canvas');
+  // 캠프파이어 캔버스는 밤하늘 위에 표시
+  canvas.style.position = 'fixed';
+  canvas.style.top = '0';
+  canvas.style.left = '0';
+  canvas.style.zIndex = '1';
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   document.body.style.margin = '0';
@@ -37,6 +99,9 @@ window.addEventListener('load', () => {
   let fireCenterX, fireCenterY, logsX, logsY, logsWidth, logsHeight;
   const logsScale = 0.1;
   const SCALE = 1.3;
+  // 캠프파이어 오프셋 (px)
+  let campfireOffsetX = 0;
+  let campfireOffsetY = 230; // 위치를 더 아래로 조정
 
   // 오디오 컨텍스트 초기화 (사용자 상호작용 발생 시)
   function initAudio() {
@@ -48,6 +113,16 @@ window.addEventListener('load', () => {
   
   function updateLayout() {
     const dpr = window.devicePixelRatio || 1;
+    // 배경 캔버스 리사이징 및 밤하늘 재생성
+    bgCanvas.width = window.innerWidth * dpr;
+    bgCanvas.height = window.innerHeight * dpr;
+    bgCanvas.style.width = window.innerWidth + 'px';
+    bgCanvas.style.height = window.innerHeight + 'px';
+    bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+    bgCtx.scale(dpr, dpr);
+    generateStars();
+    drawStars();
+
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     canvas.style.width = window.innerWidth + 'px';
@@ -57,8 +132,8 @@ window.addEventListener('load', () => {
 
     logsWidth = 150 * SCALE;
     logsHeight = 150 * SCALE;
-    fireCenterX = window.innerWidth / 2;
-    fireCenterY = window.innerHeight / 2;
+    fireCenterX = window.innerWidth / 2 + campfireOffsetX;
+    fireCenterY = window.innerHeight / 2 + campfireOffsetY;
     logsX = fireCenterX - logsWidth / 2;
     logsY = fireCenterY - logsHeight * 0.6;
   }
@@ -208,6 +283,30 @@ window.addEventListener('load', () => {
             <span class="toggle-slider"></span>
           </label>
         </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label style="color:#fff;font-size:14px;font-weight:500;">밤하늘</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="skyToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label style="color:#fff;font-size:14px;font-weight:500;">배경 이미지</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="bgToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="setting-group">
+          <label style="color:#fff;font-size:14px;font-weight:500;">모닥불 X 위치</label>
+          <input id="offsetX" type="range" min="-500" max="500" step="1" value="${campfireOffsetX}"
+                 style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+        </div>
+        <div class="setting-group">
+          <label style="color:#fff;font-size:14px;font-weight:500;">모닥불 Y 위치</label>
+          <input id="offsetY" type="range" min="-500" max="500" step="1" value="${campfireOffsetY}"
+                 style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+        </div>
       </div>
     </div>
     
@@ -356,6 +455,35 @@ window.addEventListener('load', () => {
     if (!isSmokeEnabled) {
       smokeParticles.length = 0;
     }
+  });
+
+  // 밤하늘 온/오프 토글
+  const skyToggle = document.getElementById('skyToggle');
+  skyToggle.checked = isSkyEnabled;
+  skyToggle.addEventListener('change', () => {
+    isSkyEnabled = skyToggle.checked;
+    bgCanvas.style.display = isSkyEnabled ? 'block' : 'none';
+  });
+
+  // 배경 이미지 온/오프 토글 기능
+  const bgToggle = document.getElementById('bgToggle');
+  bgToggle.checked = isBgEnabled;
+  bgToggle.addEventListener('change', () => {
+    isBgEnabled = bgToggle.checked;
+    // 배경이미지가 꺼져있으면 빈 화면 유지
+    // drawStars() 내에서 제어됨
+  });
+
+  // 모닥불 위치 슬라이더 이벤트
+  const offsetXSlider = document.getElementById('offsetX');
+  offsetXSlider.addEventListener('input', e => {
+    campfireOffsetX = parseFloat(e.target.value);
+    updateLayout();
+  });
+  const offsetYSlider = document.getElementById('offsetY');
+  offsetYSlider.addEventListener('input', e => {
+    campfireOffsetY = parseFloat(e.target.value);
+    updateLayout();
   });
 
   // 파티클 클래스 정의
@@ -684,6 +812,8 @@ window.addEventListener('load', () => {
   }
 
   function animate(currentTime) {
+    // 밤하늘 및 배경 이미지 그리기
+    drawStars();
     // 델타 타임 계산 (밀리초 단위)
     if (!lastTime) lastTime = currentTime;
     let deltaTime = currentTime - lastTime;
@@ -695,9 +825,9 @@ window.addEventListener('load', () => {
     
     lastTime = currentTime;
     
+    // 이전 프레임 클리어 (불멍만 초기화)
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     clickEffect *= 0.95 ** (deltaTime / FRAME_TIME);
 
     if (logsImg.complete) {
