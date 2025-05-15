@@ -102,14 +102,68 @@ window.addEventListener('load', () => {
   
   // 오디오 버퍼 저장소
   let ignitionBuffer = null;
-  
-  // 오디오 객체 생성 및 설정
-  const fireNormalSound = new Audio('sounds/fire_normal.wav');
+  let soundVolume = 0.5; // 기본 볼륨값 추가
+
+  // 오디오 객체 생성 및 설정 (크로스페이드용으로 변경)
+  const fireNormalSound1 = new Audio('sounds/fire_normal.wav');
+  const fireNormalSound2 = new Audio('sounds/fire_normal.wav');
   const fireIgnitionSound = new Audio('sounds/fire_ignition.wav');
-  
-  fireNormalSound.loop = true;
-  fireNormalSound.volume = 0.5;
-  
+
+  // 크로스페이드 설정
+  const crossFadeTime = 0.5; // 초
+  let currentAudio = fireNormalSound1;
+  let nextAudio = fireNormalSound2;
+  let fireNormalSound = currentAudio; // 기조 코드 호환용 alias
+
+  // 초기 볼륨 설정 (soundVolume 은 이후 선언됨)
+  fireNormalSound.volume = soundVolume;
+  nextAudio.volume = 0;
+
+  // 볼륨 페이드 헬퍼 함수
+  function fadeVolume(audio, from, to, duration) {
+    const stepTime = 50;
+    const steps = duration * 1000 / stepTime;
+    let step = 0;
+    const diff = to - from;
+    const interval = setInterval(() => {
+      step++;
+      audio.volume = Math.min(Math.max(from + diff * step / steps, 0), 1);
+      if (step >= steps) clearInterval(interval);
+    }, stepTime);
+  }
+
+  // 교차 페이드 모니터링 및 루프 함수
+  let nextStarted = false;
+  function crossFadeLoop() {
+    // 다음 오디오 시작을 아직 못했으면 타이밍 체크
+    if (!nextStarted && currentAudio.currentTime >= currentAudio.duration - crossFadeTime) {
+      nextStarted = true;
+      nextAudio.currentTime = 0;
+      nextAudio.volume = 0;
+      nextAudio.play().catch(e => console.log('오디오 재생 실패:', e));
+      // 크로스페이드
+      fadeVolume(currentAudio, soundVolume, 0, crossFadeTime);
+      fadeVolume(nextAudio, 0, soundVolume, crossFadeTime);
+      // 페이드 끝나면 swap
+      setTimeout(() => {
+        currentAudio.pause();
+        [currentAudio, nextAudio] = [nextAudio, currentAudio];
+        fireNormalSound = currentAudio;
+        nextStarted = false;
+      }, crossFadeTime * 1000);
+    }
+    requestAnimationFrame(crossFadeLoop);
+  }
+
+  // 재생 시작 및 교차페이드 루프 실행
+  function scheduleLoop() {
+    currentAudio.currentTime = 0;
+    currentAudio.volume = soundVolume;
+    currentAudio.play().catch(e => console.log('오디오 재생 실패:', e));
+    nextStarted = false;
+    requestAnimationFrame(crossFadeLoop);
+  }
+
   // 불이 켜져있는지 여부
   let isFireLit = false;
   // 자동 재생 대신 사용자 상호작용 후 재생 시작
@@ -189,8 +243,7 @@ window.addEventListener('load', () => {
       
       // 불소리 시작
       if (fireNormalSound.paused) {
-        fireNormalSound.volume = soundVolume;
-        fireNormalSound.play().catch(e => console.log('오디오 재생 실패:', e));
+        scheduleLoop();
       }
       
       // 불이 화륵 타오르는 소리 재생
@@ -216,7 +269,7 @@ window.addEventListener('load', () => {
   let fireStrength = 2.75;
   let glowSize = 1;
   let glowAlpha = 0.05;
-  let soundVolume = 0.5; // 기본 볼륨값 추가
+  soundVolume = 0.5; // 기본 볼륨값 추가
 
   // 설정 버튼 및 사이드바 추가
   const settingsBtn = document.createElement('button');
@@ -423,8 +476,7 @@ window.addEventListener('load', () => {
     
     // 불이 켜져 있는 경우에만 소리 재생
     if (isFireLit) {
-      fireNormalSound.volume = soundVolume;
-      fireNormalSound.play().catch(e => console.log('오디오 재생 실패:', e));
+      scheduleLoop();
     }
   };
 
