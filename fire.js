@@ -41,32 +41,31 @@ window.addEventListener('load', () => {
   }
 
   function drawStars() {
-    // CSS 픽셀 기준 크기 계산
     const cssWidth = window.innerWidth;
     const cssHeight = window.innerHeight;
-    if (!isSkyEnabled) {
-      bgCtx.clearRect(0, 0, cssWidth, cssHeight);
-      return;
-    }
-    // 배경 클리어 및 기본 검은 배경 채우기
+    // 캔버스 초기화
     bgCtx.clearRect(0, 0, cssWidth, cssHeight);
-    // 대체: Rayleigh 산란 기반 그라디언트 (출처: https://en.wikipedia.org/wiki/Rayleigh_scattering)
-    const skyGradient = bgCtx.createLinearGradient(0, 0, 0, cssHeight);
-    skyGradient.addColorStop(0, '#0b1a34');
-    skyGradient.addColorStop(1, '#000007');
-    bgCtx.fillStyle = skyGradient;
-    bgCtx.fillRect(0, 0, cssWidth, cssHeight);
-    // 별 그리기 (밤하늘)
-    const t = performance.now() / 1000;
-    stars.forEach(star => {
-      // 트윙클: 기압 굴절로 인한 밝기 변동 (Scintillation)
-      const flick = 0.5 + 0.5 * Math.sin(star.twinkleFreq * t + star.twinklePhase);
-      const alpha = star.baseAlpha * flick;
-      bgCtx.beginPath();
-      bgCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-      bgCtx.fillStyle = `rgba(255,255,255,${alpha})`;
-      bgCtx.fill();
-    });
+
+    // 밤하늘(그라디언트와 별)만 isSkyEnabled일 때 그리기
+    if (isSkyEnabled) {
+      // 대체: Rayleigh 산란 기반 그라디언트 (출처: https://en.wikipedia.org/wiki/Rayleigh_scattering)
+      const skyGradient = bgCtx.createLinearGradient(0, 0, 0, cssHeight);
+      skyGradient.addColorStop(0, '#0b1a34');
+      skyGradient.addColorStop(1, '#000007');
+      bgCtx.fillStyle = skyGradient;
+      bgCtx.fillRect(0, 0, cssWidth, cssHeight);
+      // 별 그리기 (밤하늘)
+      const t = performance.now() / 1000;
+      stars.forEach(star => {
+        // 트윙클: 기압 굴절로 인한 밝기 변동 (Scintillation)
+        const flick = 0.5 + 0.5 * Math.sin(star.twinkleFreq * t + star.twinklePhase);
+        const alpha = star.baseAlpha * flick;
+        bgCtx.beginPath();
+        bgCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        bgCtx.fillStyle = `rgba(255,255,255,${alpha})`;
+        bgCtx.fill();
+      });
+    }
     // 배경 이미지 그리기 (배경 레이어)
     if (isBgEnabled && bgImg.complete) {
       // 배경 이미지 그리기 (CSS 픽셀 기준)
@@ -490,7 +489,6 @@ window.addEventListener('load', () => {
   skyToggle.checked = isSkyEnabled;
   skyToggle.addEventListener('change', () => {
     isSkyEnabled = skyToggle.checked;
-    bgCanvas.style.display = isSkyEnabled ? 'block' : 'none';
   });
 
   // 배경 이미지 온/오프 토글 기능
