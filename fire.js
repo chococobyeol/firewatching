@@ -140,10 +140,19 @@ window.addEventListener('load', () => {
       nextStarted = true;
       nextAudio.currentTime = 0;
       nextAudio.volume = 0;
-      nextAudio.play().catch(e => console.log('오디오 재생 실패:', e));
-      // 크로스페이드
-      fadeVolume(currentAudio, soundVolume, 0, crossFadeTime);
-      fadeVolume(nextAudio, 0, soundVolume, crossFadeTime);
+      
+      // 음소거 상태가 아닐 때만 소리 재생
+      if (!isMuted) {
+        nextAudio.play().catch(e => console.log('오디오 재생 실패:', e));
+        // 크로스페이드
+        fadeVolume(currentAudio, soundVolume, 0, crossFadeTime);
+        fadeVolume(nextAudio, 0, soundVolume, crossFadeTime);
+      } else {
+        // 음소거 상태라면 소리 없이 재생
+        nextAudio.volume = 0;
+        nextAudio.play().catch(e => console.log('오디오 재생 실패:', e));
+      }
+      
       // 페이드 끝나면 swap
       setTimeout(() => {
         currentAudio.pause();
@@ -158,7 +167,9 @@ window.addEventListener('load', () => {
   // 재생 시작 및 교차페이드 루프 실행
   function scheduleLoop() {
     currentAudio.currentTime = 0;
-    currentAudio.volume = soundVolume;
+    // 음소거 상태가 아닐 때만 볼륨 설정
+    currentAudio.volume = isMuted ? 0 : soundVolume;
+    
     currentAudio.play().catch(e => console.log('오디오 재생 실패:', e));
     nextStarted = false;
     requestAnimationFrame(crossFadeLoop);
@@ -515,12 +526,19 @@ window.addEventListener('load', () => {
   soundToggle.checked = !isMuted; // 초기 상태 설정 (음소거가 아닌 상태면 체크)
   soundToggle.addEventListener('change', () => {
     isMuted = !soundToggle.checked; // 토글이 켜져 있으면 소리 켜짐, 꺼져있으면 소리 꺼짐
+    
     if (isMuted) {
+      // 음소거 활성화 시 즉시 모든 오디오 볼륨을 0으로 설정
       fireNormalSound.volume = 0;
       fireIgnitionSound.volume = 0;
+      currentAudio.volume = 0;
+      nextAudio.volume = 0;
     } else {
+      // 음소거 해제 시 현재 볼륨으로 설정
       fireNormalSound.volume = soundVolume;
       fireIgnitionSound.volume = soundVolume;
+      currentAudio.volume = soundVolume;
+      nextAudio.volume = 0; // 다음 오디오는 페이드인될 때까지 0
     }
   });
 
