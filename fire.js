@@ -186,14 +186,22 @@ window.addEventListener('load', () => {
                style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
       </div>
       
-      <div style="display:flex;gap:10px;margin-top:10px;">
-        <button id="muteBtn" style="flex:1;padding:10px;border:none;border-radius:4px;background-color:rgba(50,50,50,0.7);color:#fff;cursor:pointer;transition:all 0.3s;font-size:14px;">
-          🔇 음소거
-        </button>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label style="color:#fff;font-size:14px;font-weight:500;">소리</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="soundToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         
-        <button id="toggleSmokeBtn" style="flex:1;padding:10px;border:none;border-radius:4px;background-color:rgba(50,50,50,0.7);color:#fff;cursor:pointer;transition:all 0.3s;font-size:14px;">
-          💨 연기 켜짐
-        </button>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label style="color:#fff;font-size:14px;font-weight:500;">연기 효과</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="smokeToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
     </div>
     
@@ -223,8 +231,51 @@ window.addEventListener('load', () => {
       cursor: pointer;
       box-shadow: 0 1px 3px rgba(0,0,0,0.4);
     }
-    #muteBtn:hover {
-      background-color: rgba(70,70,70,0.9);
+    
+    /* 토글 스위치 스타일 */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(80, 80, 80, 0.5);
+      transition: .3s;
+      border-radius: 24px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background-color: #ff6b00;
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(26px);
     }
   `;
   document.head.appendChild(style);
@@ -275,30 +326,28 @@ window.addEventListener('load', () => {
     }
   });
 
-  // 음소거/음소거 해제 버튼 기능
-  const muteBtn = document.getElementById('muteBtn');
-  muteBtn.addEventListener('click', () => {
-    isMuted = !isMuted;
+  // 음소거/음소거 해제 버튼 기능 대신 토글 스위치 사용
+  const soundToggle = document.getElementById('soundToggle');
+  soundToggle.checked = !isMuted; // 초기 상태 설정 (음소거가 아닌 상태면 체크)
+  soundToggle.addEventListener('change', () => {
+    isMuted = !soundToggle.checked; // 토글이 켜져 있으면 소리 켜짐, 꺼져있으면 소리 꺼짐
     if (isMuted) {
       fireNormalSound.volume = 0;
       fireIgnitionSound.volume = 0;
-      muteBtn.textContent = '🔊 음소거 해제';
     } else {
       fireNormalSound.volume = soundVolume;
       fireIgnitionSound.volume = soundVolume;
-      muteBtn.textContent = '🔇 음소거';
     }
   });
 
-  // 연기 온오프 버튼 기능 추가
-  const toggleSmokeBtn = document.getElementById('toggleSmokeBtn');
-  toggleSmokeBtn.addEventListener('click', () => {
-    isSmokeEnabled = !isSmokeEnabled;
-    if (isSmokeEnabled) {
-      toggleSmokeBtn.innerHTML = '💨 연기 켜짐';
-    } else {
-      toggleSmokeBtn.innerHTML = '🚫 연기 꺼짐';
-      // 연기 끌 때 현재 있는 연기도 함께 제거
+  // 연기 온오프 버튼 기능 대신 토글 스위치 사용
+  const smokeToggle = document.getElementById('smokeToggle');
+  smokeToggle.checked = isSmokeEnabled; // 초기 상태 설정
+  smokeToggle.addEventListener('change', () => {
+    isSmokeEnabled = smokeToggle.checked;
+    
+    // 연기 끌 때 현재 있는 연기도 함께 제거
+    if (!isSmokeEnabled) {
       smokeParticles.length = 0;
     }
   });
