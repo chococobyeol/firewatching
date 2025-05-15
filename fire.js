@@ -313,48 +313,97 @@ window.addEventListener('load', () => {
       const ry = 10 * SCALE;
       this.x = fireCenterX + Math.cos(angle) * rx * radius;
       this.y = fireCenterY - 10 * SCALE + Math.sin(angle) * ry * radius;
-      // 초기 속도를 매우 느리게 설정 (더 느리게)
+      
+      // 초기 속도를 매우 느리게 설정
       this.vx = (Math.random() - 0.5) * 0.1;
-      // 지수적 상승 모델 적용
+      
       // 목표 속도(terminal velocity)를 설정
       this.vTerminal = -(Math.random() * 2 + 1.8) * SCALE;
-      // 초기 속도 0으로 시작
+      
+      // 초기 속도 설정
       this.vy = 0.5;
+      
       // 시간 상수(Frame 수) 설정: 속도 회복 속도 제어
       this.tau = 30;
+      
+      // 수명 및 크기 설정
       this.life = Math.random() * 30 + 30;
-      // 클릭 효과 크기 반영
       this.size = (Math.random() * 10 + 10) * (1 + clickEffect * 2) * SCALE;
       this.maxLife = this.life;
+      
+      // 난류 모델 파라미터 - 불꽃에 적합한 주파수와 진폭 설정 (진폭 감소)
+      this.turbPhase1 = Math.random() * Math.PI * 2;
+      this.turbPhase2 = Math.random() * Math.PI * 2;
+      this.turbFreq1 = 0.04 + Math.random() * 0.03; // 더 낮은 주파수
+      this.turbFreq2 = 0.02 + Math.random() * 0.02; // 더 낮은 주파수
+      this.turbAmplitude = 0.05 + (Math.random() * 0.1) * SCALE; // 진폭 감소
+      
+      // 상승 패턴에 영향을 주는 파라미터
+      this.flickerPhase = Math.random() * Math.PI * 2;
+      this.flickerFreq = 0.08 + Math.random() * 0.1; // 더 낮은 주파수
+      this.flickerAmplitude = 0.03 + Math.random() * 0.05; // 진폭 감소
     }
+    
     update() {
-      // 지수 모델: vy를 vTerminal로 지수 수렴
+      // 1. 기본 상승 속도 모델 - 지수 수렴 (더 강조)
       this.vy += (this.vTerminal - this.vy) / this.tau;
-      // 난류 효과: 생명비율 감소에 따라 난류 강도 증가
+      
+      // 2. 복합 난류 모델 - 수평 움직임 감소, 수직 움직임 유지
+      // 수평 방향 난류 (좌우 움직임) - 진폭 감소
+      const noiseX1 = Math.sin(this.turbPhase1) * (this.turbAmplitude * 0.6);
+      const noiseX2 = Math.sin(this.turbPhase2 * 2.3) * (this.turbAmplitude * 0.2);
+      
+      // 수직 방향 난류 (위아래 움직임) - 상대적으로 유지
+      const noiseY1 = Math.cos(this.turbPhase1 * 1.5) * (this.turbAmplitude * 0.3);
+      const noiseY2 = Math.sin(this.turbPhase2 * 3.2) * (this.turbAmplitude * 0.15);
+      
+      // 3. 깜빡임 효과 - 시간에 따른 진폭 변조 (강도 약화)
+      const flicker = Math.sin(this.flickerPhase) * this.flickerAmplitude + 0.98;
+      
+      // 4. 생명 비율에 따른 난류 강도 증가 - 불꽃 상단이 더 불규칙하게 (강도 감소)
       const lifeRatio = this.life / this.maxLife;
-      const turbulence = 0.3 * SCALE * (1 - lifeRatio);
-      this.vx += (Math.random() - 0.5) * turbulence;
-      this.vy += (Math.random() - 0.5) * turbulence * 0.5;
+      const turbulenceScale = 0.15 * SCALE * (1 - lifeRatio); // 난류 강도 감소
+      
+      // 5. 최종 속도 업데이트 - 수평 방향 영향 감소
+      // 수평 방향은 더 감쇠시키고 난류 영향 감소
+      this.vx = this.vx * 0.92 + (noiseX1 + noiseX2) * flicker + (Math.random() - 0.5) * turbulenceScale * 0.5;
+      // 수직 방향은 기본 모델에 더 의존
+      this.vy = this.vy * 0.98 + (noiseY1 + noiseY2) * flicker + (Math.random() - 0.5) * turbulenceScale * 0.4;
+      
+      // 6. 범위 제한 - 수평 방향 속도를 일정 범위로 제한
+      const maxHorizontalSpeed = 0.8 * SCALE;
+      if (this.vx > maxHorizontalSpeed) this.vx = maxHorizontalSpeed;
+      if (this.vx < -maxHorizontalSpeed) this.vx = -maxHorizontalSpeed;
+      
+      // 난류 위상 업데이트
+      this.turbPhase1 += this.turbFreq1;
+      this.turbPhase2 += this.turbFreq2;
+      this.flickerPhase += this.flickerFreq;
+      
       // 위치 업데이트
       this.x += this.vx;
       this.y += this.vy;
+      
       // 수명 및 크기 변화
       this.life--;
       this.size += 0.1;
     }
+    
     draw() {
-      // 생명비율 계산 및 플리커 효과 추가
+      // 생명비율 계산 및 플리커 효과 추가 - 난류 기반 깜빡임
       const lifeRatio = this.life / this.maxLife;
-      const flick = 0.7 + Math.random() * 0.3;
+      const flickerValue = 0.8 + Math.sin(this.flickerPhase * 3) * 0.15 + Math.random() * 0.05;
+      
       // 그라데이션 생성
       const grad = ctx.createRadialGradient(
         this.x, this.y, 0,
         this.x, this.y, this.size
       );
+      
       // 부드럽고 은은한 애니메이션 캠프파이어 색상
-      grad.addColorStop(0, `rgba(255, 230, 120, ${lifeRatio * flick * 0.6})`);
-      grad.addColorStop(0.3, `rgba(255, 140,  50, ${lifeRatio * flick * 0.5})`);
-      grad.addColorStop(0.6, `rgba(200,  70,  20, ${lifeRatio * flick * 0.3})`);
+      grad.addColorStop(0, `rgba(255, 230, 120, ${lifeRatio * flickerValue * 0.6})`);
+      grad.addColorStop(0.3, `rgba(255, 140,  50, ${lifeRatio * flickerValue * 0.5})`);
+      grad.addColorStop(0.6, `rgba(200,  70,  20, ${lifeRatio * flickerValue * 0.3})`);
       grad.addColorStop(1, `rgba(0,    0,    0, 0)`);
 
       ctx.fillStyle = grad;
