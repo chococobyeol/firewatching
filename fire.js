@@ -50,7 +50,17 @@ window.addEventListener('load', () => {
     });
     // 배경 이미지 그리기 (배경 레이어)
     if (isBgEnabled && bgImg.complete) {
-      bgCtx.drawImage(bgImg, 0, 0, bgCanvas.width, bgCanvas.height);
+      // 화면이 가로로 넓을 때는 가로 stretch, 세로는 canvas 높이에 맞춤
+      if (bgCanvas.width > bgCanvas.height) {
+        bgCtx.drawImage(bgImg, 0, 0, bgCanvas.width, bgCanvas.height);
+      } else {
+        // 화면이 세로로 길 때는 높이에 맞춰 비율 유지, 가로는 center
+        const scale = bgCanvas.height / bgImg.height;
+        const w = bgImg.width * scale;
+        const h = bgCanvas.height;
+        const x = (bgCanvas.width - w) / 2;
+        bgCtx.drawImage(bgImg, x, 0, w, h);
+      }
     }
   }
 
