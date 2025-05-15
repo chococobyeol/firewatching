@@ -28,6 +28,12 @@ window.addEventListener('load', () => {
   // 연기 효과 활성화 여부
   let isSmokeEnabled = true;
 
+  // 시간 기반 애니메이션을 위한 변수
+  let lastTime = 0;
+  const FPS = 60; // 목표 FPS
+  const FRAME_TIME = 1000 / FPS; // 프레임당 목표 시간 (ms)
+  const SPEED_FACTOR = 0.8; // 애니메이션 속도 조절 (1.0이 원래 속도, 작을수록 느림)
+
   let fireCenterX, fireCenterY, logsX, logsY, logsWidth, logsHeight;
   const logsScale = 0.1;
   const SCALE = 1.3;
@@ -393,9 +399,12 @@ window.addEventListener('load', () => {
       this.flickerAmplitude = 0.03 + Math.random() * 0.05; // 진폭 감소
     }
     
-    update() {
+    update(deltaTime) {
+      // 시간 기반 계수 (1이면 표준 속도, 2면 두 배 속도 등)
+      const timeScale = (deltaTime / FRAME_TIME) * SPEED_FACTOR;
+      
       // 1. 기본 상승 속도 모델 - 지수 수렴 (더 강조)
-      this.vy += (this.vTerminal - this.vy) / this.tau;
+      this.vy += ((this.vTerminal - this.vy) / this.tau) * timeScale;
       
       // 2. 복합 난류 모델 - 수평 움직임 감소, 수직 움직임 유지
       // 수평 방향 난류 (좌우 움직임) - 진폭 감소
@@ -415,9 +424,9 @@ window.addEventListener('load', () => {
       
       // 5. 최종 속도 업데이트 - 수평 방향 영향 감소
       // 수평 방향은 더 감쇠시키고 난류 영향 감소
-      this.vx = this.vx * 0.92 + (noiseX1 + noiseX2) * flicker + (Math.random() - 0.5) * turbulenceScale * 0.5;
+      this.vx = this.vx * (0.92 ** timeScale) + (noiseX1 + noiseX2) * flicker * timeScale + (Math.random() - 0.5) * turbulenceScale * 0.5 * timeScale;
       // 수직 방향은 기본 모델에 더 의존
-      this.vy = this.vy * 0.98 + (noiseY1 + noiseY2) * flicker + (Math.random() - 0.5) * turbulenceScale * 0.4;
+      this.vy = this.vy * (0.98 ** timeScale) + (noiseY1 + noiseY2) * flicker * timeScale + (Math.random() - 0.5) * turbulenceScale * 0.4 * timeScale;
       
       // 6. 범위 제한 - 수평 방향 속도를 일정 범위로 제한
       const maxHorizontalSpeed = 0.8 * SCALE;
@@ -425,17 +434,17 @@ window.addEventListener('load', () => {
       if (this.vx < -maxHorizontalSpeed) this.vx = -maxHorizontalSpeed;
       
       // 난류 위상 업데이트
-      this.turbPhase1 += this.turbFreq1;
-      this.turbPhase2 += this.turbFreq2;
-      this.flickerPhase += this.flickerFreq;
+      this.turbPhase1 += this.turbFreq1 * timeScale;
+      this.turbPhase2 += this.turbFreq2 * timeScale;
+      this.flickerPhase += this.flickerFreq * timeScale;
       
       // 위치 업데이트
-      this.x += this.vx;
-      this.y += this.vy;
+      this.x += this.vx * timeScale;
+      this.y += this.vy * timeScale;
       
       // 수명 및 크기 변화
-      this.life--;
-      this.size += 0.1;
+      this.life -= timeScale;
+      this.size += 0.1 * timeScale;
     }
     
     draw() {
@@ -508,32 +517,35 @@ window.addEventListener('load', () => {
       this.turbulenceFreq2 = 0.01 + Math.random() * 0.01;
     }
     
-    update() {
+    update(deltaTime) {
+      // 시간 기반 계수
+      const timeScale = (deltaTime / FRAME_TIME) * SPEED_FACTOR;
+      
       // 복합 난류 계산 (더 자연스러운 움직임을 위해 여러 주파수의 사인파 조합)
       const noise1 = Math.sin(this.turbulencePhase1) * this.turbulenceAmplitude;
       const noise2 = Math.sin(this.turbulencePhase2 * 2.7) * (this.turbulenceAmplitude * 0.6);
       const noise3 = Math.cos(this.turbulencePhase1 * 1.3) * (this.turbulenceAmplitude * 0.4);
       
       // 위치 업데이트 - 복합 난류 적용
-      this.x += this.vx + noise1 + noise2;
-      this.y += this.vy + noise3;
+      this.x += (this.vx + noise1 + noise2) * timeScale;
+      this.y += (this.vy + noise3) * timeScale;
       
       // 난류 페이즈 업데이트 (다른 속도로 업데이트)
-      this.turbulencePhase1 += this.turbulenceFreq1;
-      this.turbulencePhase2 += this.turbulenceFreq2;
+      this.turbulencePhase1 += this.turbulenceFreq1 * timeScale;
+      this.turbulencePhase2 += this.turbulenceFreq2 * timeScale;
       
       // 회전
-      this.rotation += this.rotationSpeed;
+      this.rotation += this.rotationSpeed * timeScale;
       
       // 크기 약간 증가 (퍼짐 효과) - 연기가 상승할수록 더 많이 퍼짐
       const lifeRatio = this.life / this.maxLife;
-      this.size += 0.2 * (1.2 - lifeRatio); // 수명이 줄어들수록 더 빠르게 퍼짐
+      this.size += 0.2 * (1.2 - lifeRatio) * timeScale; // 수명이 줄어들수록 더 빠르게 퍼짐
       
       // 투명도 감소 - 처음에는 천천히, 나중에는 빠르게
-      this.alpha *= 0.985;
+      this.alpha *= 0.985 ** timeScale;
       
       // 수명 감소
-      this.life--;
+      this.life -= timeScale;
     }
     
     draw() {
@@ -623,35 +635,38 @@ window.addEventListener('load', () => {
       this.swirlDir = Math.random() < 0.5 ? 1 : -1;
       this.maxLife = this.life;
     }
-    update() {
+    update(deltaTime) {
+      // 시간 기반 계수
+      const timeScale = (deltaTime / FRAME_TIME) * SPEED_FACTOR;
+      
       // Ornstein–Uhlenbeck 난류 모델 적용 (관성 반영)
-      const dt = 1;
+      const dt = timeScale;
       const sigmaScaled = this.ouSigma / this.inertia;
       const randVx = (Math.random() - 0.5) * 1;
       const randVy = (Math.random() - 0.5) * 1;
       this.ouVx += -(this.ouVx / this.ouTau) * dt + sigmaScaled * randVx * Math.sqrt(dt);
       this.ouVy += -(this.ouVy / this.ouTau) * dt + sigmaScaled * randVy * Math.sqrt(dt);
-      this.vx += this.ouVx;
-      this.vy += this.ouVy;
+      this.vx += this.ouVx * timeScale;
+      this.vy += this.ouVy * timeScale;
 
       // 공기 저항 및 난류, 중력 적용 (관성 반영)
       const drag = 0.02 / this.inertia;
       const turbulence = ((Math.random() - 0.5) * 0.2) / this.inertia;
-      this.vx = this.vx * (1 - drag) + turbulence;
-      this.vy += 0.1 * SCALE;
-      this.vy *= (1 - drag);
+      this.vx = this.vx * ((1 - drag) ** timeScale) + turbulence * timeScale;
+      this.vy += 0.1 * SCALE * timeScale;
+      this.vy *= ((1 - drag) ** timeScale);
 
       // 소용돌이 효과 (관성 반영)
       const swirlStrength = (0.01 * SCALE) / this.inertia;
       const vxOld = this.vx;
       const vyOld = this.vy;
-      this.vx += -vyOld * swirlStrength * this.swirlDir;
-      this.vy += vxOld * swirlStrength * this.swirlDir;
+      this.vx += -vyOld * swirlStrength * this.swirlDir * timeScale;
+      this.vy += vxOld * swirlStrength * this.swirlDir * timeScale;
 
       // 위치 업데이트 및 생명 감소
-      this.x += this.vx;
-      this.y += this.vy;
-      this.life--;
+      this.x += this.vx * timeScale;
+      this.y += this.vy * timeScale;
+      this.life -= timeScale;
     }
     draw() {
       const alpha = this.life / this.maxLife;
@@ -668,11 +683,22 @@ window.addEventListener('load', () => {
     }
   }
 
-  function animate() {
+  function animate(currentTime) {
+    // 델타 타임 계산 (밀리초 단위)
+    if (!lastTime) lastTime = currentTime;
+    let deltaTime = currentTime - lastTime;
+    
+    // 최소 및 최대 델타 시간 제한 (프레임 건너뛰기, 브라우저 탭 비활성화 등의 상황 처리)
+    const MAX_DELTA = FRAME_TIME * 5; // 최대 5프레임 건너뛰기 허용
+    if (deltaTime > MAX_DELTA) deltaTime = MAX_DELTA;
+    if (deltaTime < 0) deltaTime = 0;
+    
+    lastTime = currentTime;
+    
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    clickEffect *= 0.95;
+    clickEffect *= 0.95 ** (deltaTime / FRAME_TIME);
 
     if (logsImg.complete) {
       ctx.drawImage(logsImg, logsX, logsY, logsWidth, logsHeight);
@@ -689,7 +715,7 @@ window.addEventListener('load', () => {
 
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
-      p.update();
+      p.update(deltaTime);
       p.draw();
       if (p.life <= 0) particles.splice(i, 1);
     }
@@ -697,7 +723,7 @@ window.addEventListener('load', () => {
     // 스파크 업데이트 및 그리기
     for (let i = sparks.length - 1; i >= 0; i--) {
       const s = sparks[i];
-      s.update();
+      s.update(deltaTime);
       s.draw();
       if (s.life <= 0) sparks.splice(i, 1);
     }
@@ -706,7 +732,7 @@ window.addEventListener('load', () => {
     ctx.globalCompositeOperation = 'source-over';
     for (let i = smokeParticles.length - 1; i >= 0; i--) {
       const sp = smokeParticles[i];
-      sp.update();
+      sp.update(deltaTime);
       sp.draw();
       if (sp.life <= 0) smokeParticles.splice(i, 1);
     }
@@ -714,5 +740,5 @@ window.addEventListener('load', () => {
     requestAnimationFrame(animate);
   }
 
-  animate();
+  requestAnimationFrame(animate);
 });
