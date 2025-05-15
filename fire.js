@@ -28,7 +28,12 @@ window.addEventListener('load', () => {
   function generateStars() {
     stars = [];
     for (let i = 0; i < numStars; i++) {
-      stars.push({ x: Math.random() * bgCanvas.width, y: Math.random() * bgCanvas.height, radius: Math.random() * 1.2 + 0.3, alpha: Math.random() * 0.8 + 0.2 });
+      // 기본 알파, 깜빡임 주파수와 위상 설정
+      const baseAlpha = Math.random() * 0.8 + 0.2;
+      stars.push({ x: Math.random() * bgCanvas.width, y: Math.random() * bgCanvas.height, radius: Math.random() * 1.2 + 0.3,
+                   baseAlpha: baseAlpha,
+                   twinkleFreq: Math.random() * 2 + 1, // 1~3Hz 범위
+                   twinklePhase: Math.random() * Math.PI * 2 });
     }
   }
 
@@ -39,13 +44,21 @@ window.addEventListener('load', () => {
     }
     // 배경 클리어 및 기본 검은 배경 채우기
     bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-    bgCtx.fillStyle = '#000';
+    // 대체: Rayleigh scattering 기반 하늘 그라디언트 (출처: https://en.wikipedia.org/wiki/Rayleigh_scattering)
+    const skyGradient = bgCtx.createLinearGradient(0, 0, 0, bgCanvas.height);
+    skyGradient.addColorStop(0, '#0b1a34');
+    skyGradient.addColorStop(1, '#000007');
+    bgCtx.fillStyle = skyGradient;
     bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
     // 별 그리기 (밤하늘)
+    const t = performance.now() / 1000;
     stars.forEach(star => {
+      // 트윙클: 기압 굴절로 인한 밝기 변동 (Scintillation)
+      const flick = 0.5 + 0.5 * Math.sin(star.twinkleFreq * t + star.twinklePhase);
+      const alpha = star.baseAlpha * flick;
       bgCtx.beginPath();
       bgCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-      bgCtx.fillStyle = `rgba(255,255,255,${star.alpha})`;
+      bgCtx.fillStyle = `rgba(255,255,255,${alpha})`;
       bgCtx.fill();
     });
     // 배경 이미지 그리기 (배경 레이어)
