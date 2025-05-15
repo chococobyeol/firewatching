@@ -8,10 +8,36 @@ window.addEventListener('load', () => {
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
 
+  // 오디오 컨텍스트 생성 (Web Audio API)
+  let audioContext;
+  
+  // 오디오 버퍼 저장소
+  let ignitionBuffer = null;
+  
+  // 오디오 객체 생성 및 설정
+  const fireNormalSound = new Audio('sounds/fire_normal.wav');
+  const fireIgnitionSound = new Audio('sounds/fire_ignition.wav');
+  
+  fireNormalSound.loop = true;
+  fireNormalSound.volume = 0.5;
+  
+  // 불이 켜져있는지 여부
+  let isFireLit = false;
+  // 자동 재생 대신 사용자 상호작용 후 재생 시작
+  let isMuted = false;
+
   let fireCenterX, fireCenterY, logsX, logsY, logsWidth, logsHeight;
   const logsScale = 0.1;
   const SCALE = 1.3;
 
+  // 오디오 컨텍스트 초기화 (사용자 상호작용 발생 시)
+  function initAudio() {
+    if (audioContext) return Promise.resolve(); // 이미 초기화됨
+    
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    return Promise.resolve();
+  }
+  
   function updateLayout() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
@@ -38,14 +64,49 @@ window.addEventListener('load', () => {
 
   // 클릭 효과: 불꽃이 커졌다가 원래 크기로 돌아옴
   let clickEffect = 0;
-  canvas.addEventListener('click', () => {
-    clickEffect = 1;
+  canvas.addEventListener('click', async () => {
+    if (!isFireLit) {
+      // 처음 클릭 시 불 켜기
+      isFireLit = true;
+      clickEffect = 1;
+      
+      // 오디오 초기화
+      try {
+        await initAudio();
+      } catch (e) {
+        console.error('오디오 초기화 실패:', e);
+      }
+      
+      // 불소리 시작
+      if (fireNormalSound.paused) {
+        fireNormalSound.volume = soundVolume;
+        fireNormalSound.play().catch(e => console.log('오디오 재생 실패:', e));
+      }
+      
+      // 불이 화륵 타오르는 소리 재생
+      if (!isMuted) {
+        fireIgnitionSound.currentTime = 0;
+        fireIgnitionSound.volume = soundVolume;
+        fireIgnitionSound.play().catch(e => console.log('오디오 재생 실패:', e));
+      }
+    } else {
+      // 이미 불이 켜져있는 상태에서 클릭 시
+      clickEffect = 1;
+      
+      // 클릭 시 불이 화륵 커지는 소리 재생
+      if (!isMuted) {
+        fireIgnitionSound.currentTime = 0;
+        fireIgnitionSound.volume = soundVolume;
+        fireIgnitionSound.play().catch(e => console.log('오디오 재생 실패:', e));
+      }
+    }
   });
 
-  // slider 기본값 초기화
+  // 슬라이더 기본값 초기화
   let fireStrength = 2.75;
   let glowSize = 0.5;
   let glowAlpha = 0.05;
+  let soundVolume = 0.5; // 기본 볼륨값 추가
 
   // 설정 버튼 및 사이드바 추가
   const settingsBtn = document.createElement('button');
@@ -81,9 +142,24 @@ window.addEventListener('load', () => {
       <label style="color:#fff;">빛무리 밝기
         <input id="glowAlpha" type="range" min="0" max="0.1" step="0.01" value="${glowAlpha}" style="width:100%;">
       </label>
+      <label style="color:#fff;">소리 볼륨
+        <input id="soundVolume" type="range" min="0" max="1" step="0.01" value="${soundVolume}" style="width:100%;">
+      </label>
+      <button id="muteBtn" style="margin-top:8px;padding:8px 12px;">🔇 음소거</button>
     </div>
   `;
   document.body.appendChild(sidebar);
+
+  // 첫 클릭시 오디오 재생 시작
+  const startAudio = () => {
+    if (!fireNormalSound.paused) return; // 이미 재생 중이면 무시
+    
+    // 불이 켜져 있는 경우에만 소리 재생
+    if (isFireLit) {
+      fireNormalSound.volume = soundVolume;
+      fireNormalSound.play().catch(e => console.log('오디오 재생 실패:', e));
+    }
+  };
 
   settingsBtn.addEventListener('click', () => {
     if (sidebar.style.right === '0px') {
@@ -91,6 +167,10 @@ window.addEventListener('load', () => {
     } else {
       sidebar.style.right = '0px';
     }
+    
+    // 불이 꺼져있는 상태에서 설정 버튼 클릭 시에는 불을 켜지 않음
+    // 이미 불이 켜져있는 경우에만 오디오 시작
+    startAudio();
   });
 
   document.getElementById('fireStrength').addEventListener('input', e => {
@@ -101,6 +181,29 @@ window.addEventListener('load', () => {
   });
   document.getElementById('glowAlpha').addEventListener('input', e => {
     glowAlpha = parseFloat(e.target.value);
+  });
+  document.getElementById('soundVolume').addEventListener('input', e => {
+    soundVolume = parseFloat(e.target.value);
+    // 볼륨 업데이트
+    if (!isMuted) {
+      fireNormalSound.volume = soundVolume;
+      fireIgnitionSound.volume = soundVolume;
+    }
+  });
+
+  // 음소거/음소거 해제 버튼 기능
+  const muteBtn = document.getElementById('muteBtn');
+  muteBtn.addEventListener('click', () => {
+    isMuted = !isMuted;
+    if (isMuted) {
+      fireNormalSound.volume = 0;
+      fireIgnitionSound.volume = 0;
+      muteBtn.textContent = '🔊 음소거 해제';
+    } else {
+      fireNormalSound.volume = soundVolume;
+      fireIgnitionSound.volume = soundVolume;
+      muteBtn.textContent = '🔇 음소거';
+    }
   });
 
   // 파티클 클래스 정의
@@ -166,6 +269,9 @@ window.addEventListener('load', () => {
 
   const particles = [];
   function spawnParticle() {
+    // 불이 꺼져있으면 파티클 생성 안함
+    if (!isFireLit) return;
+    
     // 매 프레임마다 몇 개의 파티클 생성 (생성 속도 감소)
     // 클릭 효과에 따라 파티클 수 증가
     // 기본 파티클 수를 줄여 깜빡임 완화
@@ -260,8 +366,9 @@ window.addEventListener('load', () => {
 
   const sparks = [];
   function spawnSpark() {
-    if (Math.random() < 0.02 * fireStrength) {
+    if (isFireLit && Math.random() < 0.02 * fireStrength) {
       sparks.push(new Spark());
+      // 불똥 소리 제거 - 크래클링 사운드 구현을 제거함
     }
   }
 
@@ -275,7 +382,9 @@ window.addEventListener('load', () => {
       ctx.drawImage(logsImg, logsX, logsY, logsWidth, logsHeight);
     }
 
-    drawGlow();
+    if (isFireLit) {
+      drawGlow();
+    }
 
     ctx.globalCompositeOperation = 'lighter';
     spawnParticle();
