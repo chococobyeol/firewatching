@@ -277,9 +277,9 @@ window.addEventListener('load', () => {
   });
 
   // 슬라이더 기본값 초기화
-  let fireStrength = 2.75;
-  let glowSize = 1;
-  let glowAlpha = 0.05;
+  let fireStrength = 5;
+  let glowSize = 1.5;
+  let glowAlpha = 0.15;
   soundVolume = 0.5; // 기본 볼륨값 추가
 
   // 설정 버튼 및 사이드바 추가
@@ -336,19 +336,19 @@ window.addEventListener('load', () => {
     <div style="display:flex;flex-direction:column;gap:18px;">
       <div class="setting-group">
         <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">불꽃 강도</label>
-        <input id="fireStrength" type="range" min="0.5" max="5.0" step="0.01" value="${fireStrength}" 
+        <input id="fireStrength" type="range" min="0.5" max="9.5" step="0.01" value="${fireStrength}" 
                style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
       </div>
       
       <div class="setting-group">
         <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 크기</label>
-        <input id="glowSize" type="range" min="0" max="2" step="0.01" value="${glowSize}" 
+        <input id="glowSize" type="range" min="0" max="3" step="0.01" value="${glowSize}" 
                style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
       </div>
       
       <div class="setting-group">
         <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 밝기</label>
-        <input id="glowAlpha" type="range" min="0" max="0.1" step="0.01" value="${glowAlpha}" 
+        <input id="glowAlpha" type="range" min="0" max="0.3" step="0.01" value="${glowAlpha}" 
                style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
       </div>
       
