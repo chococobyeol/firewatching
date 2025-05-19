@@ -274,11 +274,20 @@ window.addEventListener('load', () => {
 
   // 클릭 효과: 불꽃이 커졌다가 원래 크기로 돌아옴
   let clickEffect = 0;
+  let clickEffectDecay = 0.95; // 감소 속도 (기본값)
+  let clickColorEffect = 0;    // 클릭 시 색상 변화 효과
+  let sparkBurst = false;      // 스파크 폭발 효과 제어
+  let sparkBurstTimer = 0;     // 스파크 폭발 타이머
+  
   canvas.addEventListener('click', async () => {
     if (!isFireLit) {
       // 처음 클릭 시 불 켜기
       isFireLit = true;
-      clickEffect = 1;
+      clickEffect = 0.8; // 초기 클릭 효과 감소 (1.0 → 0.7 → 0.8)
+      clickEffectDecay = 0.975; // 효과가 더 천천히 감소하도록 조정
+      clickColorEffect = 1.0;   // 색상 효과 활성화
+      sparkBurst = true;        // 스파크 폭발 효과 활성화
+      sparkBurstTimer = 60;     // 약 1초간 스파크 폭발 지속
       
       // 오디오 초기화
       try {
@@ -300,7 +309,11 @@ window.addEventListener('load', () => {
       }
     } else {
       // 이미 불이 켜져있는 상태에서 클릭 시
-      clickEffect = 1;
+      clickEffect = 0.6; // 클릭 효과 감소 (1.0 → 0.5 → 0.6)
+      clickEffectDecay = 0.96; // 기본 감소 속도 약간 증가
+      clickColorEffect = 0.8;  // 색상 효과 활성화 (약간 약하게)
+      sparkBurst = true;       // 스파크 폭발 효과 활성화
+      sparkBurstTimer = 40;    // 약 0.7초간 스파크 폭발 지속
       
       // 클릭 시 불이 화륵 커지는 소리 재생
       if (!isMuted) {
@@ -622,9 +635,17 @@ window.addEventListener('load', () => {
     constructor() {
       // 타원 형태로 시작 위치 분포
       const angle = Math.random() * 2 * Math.PI;
-      const radius = Math.sqrt(Math.random());
-      const rx = 30 * SCALE;
-      const ry = 10 * SCALE;
+      
+      // 중앙에서 더 많은 파티클이 생성되도록 분포 조정
+      const radius = Math.pow(Math.random(), 0.5); // 제곱근 분포로 중앙 강조
+      
+      // 클릭 이펙트가 활성화되었을 때 시작 위치 영역 확장
+      const spreadFactorX = (1 + clickEffect * 0.6); // 클릭 시 너비 확장
+      const spreadFactorY = (1 + clickEffect * 0.3); // 클릭 시 높이 확장
+      
+      const rx = 30 * SCALE * spreadFactorX;
+      const ry = 10 * SCALE * spreadFactorY;
+      
       this.x = fireCenterX + Math.cos(angle) * rx * radius;
       this.y = fireCenterY - 10 * SCALE + Math.sin(angle) * ry * radius;
       
@@ -632,17 +653,20 @@ window.addEventListener('load', () => {
       this.vx = (Math.random() - 0.5) * 0.1;
       
       // 목표 속도(terminal velocity)를 설정
-      this.vTerminal = -(Math.random() * 2 + 1.8) * SCALE;
+      // 클릭 효과가 있을 때 상승 속도 증가
+      const speedBoost = 1 + clickEffect * 0.5;
+      this.vTerminal = -(Math.random() * 2 + 1.8) * SCALE * speedBoost;
       
       // 초기 속도 설정
-      this.vy = 0.5;
+      this.vy = 0.5 * speedBoost;
       
       // 시간 상수(Frame 수) 설정: 속도 회복 속도 제어
       this.tau = 30;
       
       // 수명 및 크기 설정
       this.life = Math.random() * 30 + 30;
-      this.size = (Math.random() * 10 + 10) * (1 + clickEffect * 2) * SCALE;
+      // 클릭 효과에 따른 크기 조정
+      this.size = (Math.random() * 10 + 10) * (1 + clickEffect * 0.5) * SCALE;
       this.maxLife = this.life;
       
       // 난류 모델 파라미터 - 불꽃에 적합한 주파수와 진폭 설정 (진폭 감소)
@@ -650,12 +674,23 @@ window.addEventListener('load', () => {
       this.turbPhase2 = Math.random() * Math.PI * 2;
       this.turbFreq1 = 0.04 + Math.random() * 0.03; // 더 낮은 주파수
       this.turbFreq2 = 0.02 + Math.random() * 0.02; // 더 낮은 주파수
-      this.turbAmplitude = 0.05 + (Math.random() * 0.1) * SCALE; // 진폭 감소
+      // 클릭 효과에 따른 난류 증가
+      this.turbAmplitude = (0.05 + (Math.random() * 0.1)) * (1 + clickEffect * 0.4) * SCALE;
       
       // 상승 패턴에 영향을 주는 파라미터
       this.flickerPhase = Math.random() * Math.PI * 2;
       this.flickerFreq = 0.08 + Math.random() * 0.1; // 더 낮은 주파수
       this.flickerAmplitude = 0.03 + Math.random() * 0.05; // 진폭 감소
+      
+      // 색상 파라미터 추가 (클릭 효과에 따른 색상 변화)
+      this.colorShift = 0;
+      if (clickColorEffect > 0) {
+        // 클릭 효과가 강할수록 특별한 색상 확률 증가
+        if (Math.random() < clickColorEffect * 0.4) { // 0.6에서 0.4로 줄임
+          // 특별한 색상 효과 (0: 일반, 1: 청록색, 2: 파란색, 3: 보라색)
+          this.colorShift = Math.floor(Math.random() * 3) + 1;
+        }
+      }
     }
     
     update(deltaTime) {
@@ -717,11 +752,32 @@ window.addEventListener('load', () => {
         this.x, this.y, this.size
       );
       
-      // 부드럽고 은은한 애니메이션 캠프파이어 색상
-      grad.addColorStop(0, `rgba(255, 230, 120, ${lifeRatio * flickerValue * 0.6})`);
-      grad.addColorStop(0.3, `rgba(255, 140,  50, ${lifeRatio * flickerValue * 0.5})`);
-      grad.addColorStop(0.6, `rgba(200,  70,  20, ${lifeRatio * flickerValue * 0.3})`);
-      grad.addColorStop(1, `rgba(0,    0,    0, 0)`);
+      // 색상 변화 로직 - 클릭 효과가 있을 때만 밝기 감소
+      const brightnessReduction = clickEffect > 0.05 ? 0.85 : 1.0;
+      
+      if (this.colorShift === 0) {
+        // 기본 불꽃 색상 - 밝기 조정
+        grad.addColorStop(0, `rgba(255, 230, 120, ${lifeRatio * flickerValue * 0.6 * brightnessReduction})`);
+        grad.addColorStop(0.3, `rgba(255, 140,  50, ${lifeRatio * flickerValue * 0.5 * brightnessReduction})`);
+        grad.addColorStop(0.6, `rgba(200,  70,  20, ${lifeRatio * flickerValue * 0.3 * brightnessReduction})`);
+      } else if (this.colorShift === 1) {
+        // 청록색 불꽃 효과 - 밝기 조정
+        grad.addColorStop(0, `rgba(200, 255, 220, ${lifeRatio * flickerValue * 0.6 * brightnessReduction})`);
+        grad.addColorStop(0.3, `rgba(80, 230, 180, ${lifeRatio * flickerValue * 0.5 * brightnessReduction})`);
+        grad.addColorStop(0.6, `rgba(0, 180, 140, ${lifeRatio * flickerValue * 0.4 * brightnessReduction})`);
+      } else if (this.colorShift === 2) {
+        // 파란색 불꽃 효과 - 밝기 조정
+        grad.addColorStop(0, `rgba(200, 230, 255, ${lifeRatio * flickerValue * 0.6 * brightnessReduction})`);
+        grad.addColorStop(0.3, `rgba(100, 170, 255, ${lifeRatio * flickerValue * 0.5 * brightnessReduction})`);
+        grad.addColorStop(0.6, `rgba(50, 100, 220, ${lifeRatio * flickerValue * 0.4 * brightnessReduction})`);
+      } else if (this.colorShift === 3) {
+        // 보라색 불꽃 효과 - 밝기 조정
+        grad.addColorStop(0, `rgba(230, 190, 255, ${lifeRatio * flickerValue * 0.6 * brightnessReduction})`);
+        grad.addColorStop(0.3, `rgba(180, 130, 255, ${lifeRatio * flickerValue * 0.5 * brightnessReduction})`);
+        grad.addColorStop(0.6, `rgba(130, 70, 220, ${lifeRatio * flickerValue * 0.4 * brightnessReduction})`);
+      }
+      
+      grad.addColorStop(1, `rgba(0, 0, 0, 0)`);
 
       ctx.fillStyle = grad;
       ctx.beginPath();
@@ -735,10 +791,12 @@ window.addEventListener('load', () => {
     // 불이 꺼져있으면 파티클 생성 안함
     if (!isFireLit) return;
     
-    // 매 프레임마다 몇 개의 파티클 생성 (생성 속도 감소)
-    // 클릭 효과에 따라 파티클 수 증가
-    // 기본 파티클 수를 줄여 깜빡임 완화
-    const count = Math.floor((Math.random() * 2) * (1 + clickEffect * 5) * fireStrength);
+    // 매 프레임마다 몇 개의 파티클 생성 조정
+    // 클릭 효과에 따른 파티클 수 증가 (파티클 폭발 효과 조절)
+    const baseCount = Math.random() * 2; // 기본 파티클 수
+    const clickBoost = Math.max(0, clickEffect * 3); // 클릭 효과에 따른 추가 파티클 (5 → 3)
+    const count = Math.floor(baseCount * (1 + clickBoost) * fireStrength);
+    
     for (let i = 0; i < count; i++) {
       particles.push(new Particle());
     }
@@ -856,9 +914,13 @@ window.addEventListener('load', () => {
       glowX, glowY, 0,
       glowX, glowY, maxGlow
     );
-    grad.addColorStop(0, `rgba(255, 230, 120, ${glowAlpha})`);
-    grad.addColorStop(0.25, `rgba(255, 180, 60, ${glowAlpha * 0.55})`);
-    grad.addColorStop(0.6, `rgba(255, 120, 30, ${glowAlpha * 0.22})`);
+    
+    // 클릭 효과가 있을 때만 글로우 밝기 감소
+    const reducedGlowAlpha = clickEffect > 0.05 ? glowAlpha * 0.85 : glowAlpha;
+    
+    grad.addColorStop(0, `rgba(255, 230, 120, ${reducedGlowAlpha})`);
+    grad.addColorStop(0.25, `rgba(255, 180, 60, ${reducedGlowAlpha * 0.55})`);
+    grad.addColorStop(0.6, `rgba(255, 120, 30, ${reducedGlowAlpha * 0.22})`);
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.globalCompositeOperation = 'lighter';
@@ -872,28 +934,70 @@ window.addEventListener('load', () => {
   // 스파크(불똥) 클래스 정의
   class Spark {
     constructor() {
-      // 퍼짐 영역을 축소하여 너무 멀리 튀어나가지 않도록 설정
-      const spread = 40 * SCALE;
-      this.x = fireCenterX + (Math.random() - 0.5) * spread;
-      this.y = fireCenterY;
-      // 수평 속도 범위를 줄여 멀리 튀지 않도록 설정
-      this.vx = (Math.random() - 0.5) * 4;
-      // 초기 상승 속도를 줄여 비행 거리를 제한
-      this.vy = -(Math.random() * 7 + 1) * SCALE;
+      // 클릭 효과가 있을 때와 없을 때 구분
+      if (clickEffect > 0.05) {
+        // 클릭했을 때: 퍼짐 범위와 속도 조절
+        const spread = 40 * SCALE * (1 + clickEffect * 0.4);
+        this.x = fireCenterX + (Math.random() - 0.5) * spread;
+        this.y = fireCenterY;
+        
+        // 클릭 시 속도 감소
+        const speedBoost = 1 + clickEffect * 0.8;
+        this.vx = (Math.random() - 0.5) * 3 * speedBoost;
+        this.vy = -(Math.random() * 4 + 1) * SCALE * speedBoost;
+        
+        // 스파크 폭발 효과일 때 튀어오르는 불똥 추가 - 높이를 줄임
+        if (sparkBurst) {
+          this.vy *= 1.1;
+          this.vx *= 1.1;
+        }
+      } else {
+        // 클릭하지 않았을 때: 원래 설정 유지
+        const spread = 40 * SCALE;
+        this.x = fireCenterX + (Math.random() - 0.5) * spread;
+        this.y = fireCenterY;
+        
+        // 원래 속도 유지
+        this.vx = (Math.random() - 0.5) * 4;
+        this.vy = -(Math.random() * 5 + 1) * SCALE; // 7에서 5로 살짝만 감소
+      }
+      
       this.life = Math.random() * 20 + 20;
-      // 크기를 줄여 좀 더 작은 스파크 표현
-      this.size = Math.random() * 3 + 0.5;
-      // 관성: 크기에 비례 (입자가 크면 난류·항력·소용돌이 영향 감소)
+      
+      // 크기 설정 (클릭 효과에 따라 조정)
+      if (clickEffect > 0.05) {
+        this.size = (Math.random() * 3 + 0.5) * (1 + clickEffect * 0.3);
+      } else {
+        this.size = Math.random() * 3 + 0.5;
+      }
+      
+      // 관성: 크기에 비례
       this.inertia = this.size;
+      
       // Ornstein–Uhlenbeck 난류 모델 파라미터 초기화
       this.ouTau = 20;   // 에디스 시간 상수 (프레임 단위)
-      this.ouSigma = 0.2 * SCALE;   // 난류 강도를 줄여 궤적 범위 제한
+      
+      // 난류 강도 (클릭 효과에 따라 조정)
+      if (clickEffect > 0.05) {
+        this.ouSigma = 0.2 * SCALE * (1 + clickEffect * 0.2);
+      } else {
+        this.ouSigma = 0.2 * SCALE;
+      }
+      
       this.ouVx = 0;     // x 방향 난류 속도 편차
       this.ouVy = 0;     // y 방향 난류 속도 편차
+      
       // 소용돌이 방향 랜덤 설정 (1 또는 -1)
       this.swirlDir = Math.random() < 0.5 ? 1 : -1;
       this.maxLife = this.life;
+      
+      // 색상 효과 추가 (클릭 시 일부 스파크에 특별한 색상)
+      this.colorType = 0; // 0: 일반, 1-3: 특별 색상
+      if (clickColorEffect > 0 && Math.random() < clickColorEffect * 0.6) {
+        this.colorType = Math.floor(Math.random() * 3) + 1;
+      }
     }
+    
     update(deltaTime) {
       // 시간 기반 계수
       const timeScale = (deltaTime / FRAME_TIME) * SPEED_FACTOR;
@@ -927,18 +1031,46 @@ window.addEventListener('load', () => {
       this.y += this.vy * timeScale;
       this.life -= timeScale;
     }
+    
     draw() {
       const alpha = this.life / this.maxLife;
-      ctx.fillStyle = `rgba(255,220,150,${alpha})`;
+      
+      // 색상 타입에 따른 불똥 색상 설정
+      // 클릭 효과가 있을 때만 밝기 감소
+      const reducedAlpha = clickEffect > 0.05 ? alpha * 0.7 : alpha;
+      
+      if (this.colorType === 0) {
+        // 기본 금색 불똥
+        ctx.fillStyle = `rgba(255,220,150,${reducedAlpha})`;
+      } else if (this.colorType === 1) {
+        // 청록색 불똥
+        ctx.fillStyle = `rgba(120,255,220,${reducedAlpha})`;
+      } else if (this.colorType === 2) {
+        // 파란색 불똥
+        ctx.fillStyle = `rgba(150,200,255,${reducedAlpha})`;
+      } else if (this.colorType === 3) {
+        // 보라색 불똥
+        ctx.fillStyle = `rgba(230,150,255,${reducedAlpha})`;
+      }
+      
       ctx.fillRect(this.x, this.y, this.size, this.size);
     }
   }
 
   const sparks = [];
   function spawnSpark() {
-    if (isFireLit && Math.random() < 0.02 * fireStrength) {
+    if (!isFireLit) return;
+    
+    // 기본 스파크 생성 확률 - 원래 확률로 복원
+    let sparkChance = 0.02 * fireStrength;
+    
+    // 스파크 폭발 효과가 활성화된 경우에만 확률 조정
+    if (sparkBurst) {
+      sparkChance = 0.2 * fireStrength;
+    }
+    
+    if (Math.random() < sparkChance) {
       sparks.push(new Spark());
-      // 불똥 소리 제거 - 크래클링 사운드 구현을 제거함
     }
   }
 
@@ -959,7 +1091,24 @@ window.addEventListener('load', () => {
     // 이전 프레임 클리어 (불멍만 초기화)
     ctx.globalCompositeOperation = 'source-over';
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    clickEffect *= 0.95 ** (deltaTime / FRAME_TIME);
+    
+    // 클릭 효과 감소 (사용자 정의 감소 속도 적용)
+    clickEffect *= clickEffectDecay ** (deltaTime / FRAME_TIME);
+    
+    // 색상 효과 감소 (더 빠른 속도로)
+    if (clickColorEffect > 0) {
+      clickColorEffect *= (0.94 ** (deltaTime / FRAME_TIME));
+      if (clickColorEffect < 0.01) clickColorEffect = 0;
+    }
+    
+    // 스파크 폭발 타이머 업데이트
+    if (sparkBurst) {
+      sparkBurstTimer -= deltaTime / FRAME_TIME;
+      if (sparkBurstTimer <= 0) {
+        sparkBurst = false;
+        sparkBurstTimer = 0;
+      }
+    }
 
     if (logsImg.complete) {
       ctx.drawImage(logsImg, logsX, logsY, logsWidth, logsHeight);
