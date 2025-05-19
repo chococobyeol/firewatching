@@ -1,6 +1,23 @@
 // alarm.js
 // 좌측 알람 버튼 및 사이드바 생성, 알람 설정 로직
 (function() {
+  // 페이지 활성화/비활성화 상태 추적 변수
+  let isPageVisible = !document.hidden;
+  let pendingAlarmPopup = null;
+
+  // 페이지 가시성 변화 이벤트 리스너 추가
+  document.addEventListener('visibilitychange', () => {
+    isPageVisible = !document.hidden;
+    
+    // 페이지가 다시 활성화되었고 대기 중인 알람 팝업이 있으면 표시
+    if (isPageVisible && pendingAlarmPopup) {
+      document.body.appendChild(pendingAlarmPopup.containerDiv);
+      // 이벤트 리스너 다시 바인딩
+      setupAlarmPopupEvents(pendingAlarmPopup);
+      pendingAlarmPopup = null;
+    }
+  });
+
   // 알람 버튼 생성
   const alarmBtn = document.createElement('button');
   alarmBtn.id = 'alarmBtn';
@@ -270,20 +287,91 @@
     }
   }
 
+  // 알람 팝업 이벤트 설정 함수 (이벤트 위임을 위해 별도 함수로 분리)
+  function setupAlarmPopupEvents(popupData) {
+    const { containerDiv, alarm } = popupData;
+    
+    // 페이지 전체에 이벤트 리스너 추가 (이벤트 위임 방식)
+    const stopAlarmBtn = containerDiv.querySelector('#stopAlarm');
+    if (stopAlarmBtn) {
+      // 기존 리스너 제거 (중복 방지)
+      stopAlarmBtn.removeEventListener('click', popupData.clickHandler);
+      
+      // 새 리스너 추가 및 참조 저장
+      popupData.clickHandler = () => {
+        if (alarm.sound) {
+          alarmAudioEl.pause();
+          alarmAudioEl.currentTime = 0;
+          alarmAudioEl.loop = false;
+        }
+        
+        try {
+          document.body.removeChild(containerDiv);
+        } catch (e) {
+          console.log('알람 컨테이너가 이미 제거됨');
+        }
+        
+        // 알람 목록에서 제거 (반복이 아닌 경우)
+        if (!alarm.repeat) {
+          removeAlarm(alarm.id);
+        } else {
+          // 반복 알람 재설정
+          const existingAlarm = alarms.find(a => a.id === alarm.id);
+          if (existingAlarm) {
+            const newTarget = new Date();
+            newTarget.setHours(alarm.hour, alarm.minute, 0, 0);
+            newTarget.setDate(newTarget.getDate() + 1);
+            const newDiff = newTarget.getTime() - new Date().getTime();
+            
+            existingAlarm.timeoutId = setTimeout(createAlarmCallback(alarm), newDiff);
+            saveAlarms();
+          }
+        }
+      };
+      
+      stopAlarmBtn.addEventListener('click', popupData.clickHandler);
+      
+      // 중요: 이벤트 위임 방식으로 버튼 클릭 대체 핸들러 추가
+      // 경우에 따라 버튼 이벤트가 작동하지 않을 때를 대비
+      containerDiv.addEventListener('click', (e) => {
+        if (e.target === stopAlarmBtn || stopAlarmBtn.contains(e.target)) {
+          popupData.clickHandler();
+        }
+      });
+      
+      // 키보드 이벤트도 추가 (Enter 또는 Space 키로 확인 가능)
+      containerDiv.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          popupData.clickHandler();
+        }
+      });
+    }
+  }
+
   // 알람 콜백 생성 함수 (클로저로 알람 정보 유지)
   function createAlarmCallback(alarm) {
     return () => {
+      // 오디오 컨텍스트 초기화 확인
+      if (window.audioContext && window.audioContext.state === 'suspended') {
+        window.audioContext.resume();
+      }
+      
       // 알람 소리 재생 (소리 설정이 켜져 있을 때만)
       if (alarm.sound) {
         alarmAudioEl.currentTime = 0;
         alarmAudioEl.loop = false; // 반복 재생하지 않음
-        alarmAudioEl.play();
         
-        // 소리 재생이 끝나면 자동으로 중지
+        // 소리가 끝나는 이벤트 핸들러 재설정
         alarmAudioEl.onended = () => {
           alarmAudioEl.pause();
           alarmAudioEl.currentTime = 0;
         };
+        
+        // 소리 재생 시도
+        const playPromise = alarmAudioEl.play().catch(e => {
+          console.log('오디오 재생 실패:', e);
+          // 자동 재생 정책으로 실패했을 수 있음, 페이지가 활성화될 때 다시 시도
+        });
       }
       
       // 알람 창을 표시하는 커스텀 함수 만들기
@@ -345,34 +433,31 @@
       `;
       
       containerDiv.appendChild(alarmPopup);
-      document.body.appendChild(containerDiv);
       
-      // 확인 버튼 클릭 시 알람 소리 중지 및 팝업 제거
-      document.getElementById('stopAlarm').addEventListener('click', () => {
-        if (alarm.sound) {
-          alarmAudioEl.pause();
-          alarmAudioEl.currentTime = 0;
-          alarmAudioEl.loop = false;
-        }
-        document.body.removeChild(containerDiv);
+      // 팝업 데이터 객체 생성
+      const popupData = {
+        containerDiv,
+        alarm,
+        clickHandler: null // 이벤트 핸들러 참조를 저장할 속성
+      };
+      
+      // 페이지가 보이는 상태면 바로 표시, 아니면 보류
+      if (isPageVisible) {
+        document.body.appendChild(containerDiv);
+        setupAlarmPopupEvents(popupData);
+      } else {
+        // 페이지가 비활성화된 상태이면 알람 팝업을 보류
+        pendingAlarmPopup = popupData;
         
-        // 알람 목록에서 제거 (반복이 아닌 경우)
-        if (!alarm.repeat) {
-          removeAlarm(alarm.id);
-        } else {
-          // 반복 알람 재설정
-          const existingAlarm = alarms.find(a => a.id === alarm.id);
-          if (existingAlarm) {
-            const newTarget = new Date();
-            newTarget.setHours(alarm.hour, alarm.minute, 0, 0);
-            newTarget.setDate(newTarget.getDate() + 1);
-            const newDiff = newTarget.getTime() - new Date().getTime();
-            
-            existingAlarm.timeoutId = setTimeout(createAlarmCallback(alarm), newDiff);
-            saveAlarms();
+        // 애니메이션 프레임 재개를 위한 플래그 설정
+        if (window.fireAnimationPaused) {
+          window.fireAnimationPaused = false;
+          // 이 시점에서 애니메이션 프레임이 다시 시작될 수 있도록 알림
+          if (typeof window.resumeFireAnimation === 'function') {
+            window.resumeFireAnimation();
           }
         }
-      });
+      }
     };
   }
 

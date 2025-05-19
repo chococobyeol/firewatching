@@ -1,4 +1,37 @@
 window.addEventListener('load', () => {
+  // 페이지 활성화/비활성화 상태 관리 변수
+  window.fireAnimationPaused = false;
+  let animationFrameId = null;
+
+  // visibilitychange 이벤트 리스너 추가
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      // 페이지가 비활성화되면 애니메이션 상태 저장
+      window.fireAnimationPaused = true;
+      // 필요시 애니메이션 프레임 취소 (선택적)
+      // if (animationFrameId) {
+      //   cancelAnimationFrame(animationFrameId);
+      //   animationFrameId = null;
+      // }
+    } else {
+      // 페이지가 다시 활성화되면 애니메이션 재개
+      if (window.fireAnimationPaused) {
+        window.fireAnimationPaused = false;
+        if (!animationFrameId) {
+          // 애니메이션 재시작
+          animationFrameId = requestAnimationFrame(animate);
+        }
+      }
+    }
+  });
+
+  // 애니메이션 재개 함수 (알람에서 호출할 수 있도록 전역으로 노출)
+  window.resumeFireAnimation = () => {
+    if (window.fireAnimationPaused === false && !animationFrameId) {
+      animationFrameId = requestAnimationFrame(animate);
+    }
+  };
+
   // 기존 HTML의 빈 canvas 제거 (id="fireCanvas")
   const oldCanvas = document.getElementById('fireCanvas');
   if (oldCanvas) oldCanvas.remove();
@@ -200,6 +233,8 @@ window.addEventListener('load', () => {
     if (audioContext) return Promise.resolve(); // 이미 초기화됨
     
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // 전역에서 접근할 수 있도록 노출
+    window.audioContext = audioContext;
     return Promise.resolve();
   }
   
@@ -963,8 +998,10 @@ window.addEventListener('load', () => {
       if (sp.life <= 0) smokeParticles.splice(i, 1);
     }
 
-    requestAnimationFrame(animate);
+    // 애니메이션 프레임 ID 저장
+    animationFrameId = requestAnimationFrame(animate);
   }
 
-  requestAnimationFrame(animate);
+  // 초기 애니메이션 시작
+  animationFrameId = requestAnimationFrame(animate);
 });
