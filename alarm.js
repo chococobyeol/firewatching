@@ -179,6 +179,9 @@
       background-color: rgba(60,60,60,0.5);
       border-radius: 4px;
       font-size: 14px;
+      overflow: hidden;
+      width: 100%;
+      box-sizing: border-box;
     }
     #alarmList li button {
       background: none;
@@ -192,6 +195,28 @@
     #alarmList li button:hover {
       background-color: rgba(255,100,100,0.2);
       color: rgba(255,100,100,1);
+    }
+    /* 알람 정보 영역 스타일 추가 */
+    .alarm-info {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      margin-right: 10px;
+    }
+    .alarm-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      display: block;
+    }
+    /* 알람 컨트롤 버튼 영역 */
+    .alarm-controls {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      min-width: 60px;
+      justify-content: flex-end;
     }
     #resetAlarms:hover {
       background-color: rgba(255,80,80,0.3) !important;
@@ -681,6 +706,7 @@
     resetAllBtn.style.borderRadius = '4px';
     resetAllBtn.style.cursor = 'pointer';
     resetAllBtn.style.fontSize = '12px';
+    resetAllBtn.style.whiteSpace = 'nowrap';
     
     resetAllBtn.addEventListener('click', () => {
       if (confirm('모든 알람을 초기화하시겠습니까?')) {
@@ -704,7 +730,7 @@
     // 정각 알림 제거 버튼 (정각 알림이 있을 경우에만 표시)
     if (hourlyAlarmsCount > 0) {
       const removeHourlyBtn = document.createElement('button');
-      removeHourlyBtn.textContent = '정각 알림 모두 제거';
+      removeHourlyBtn.textContent = '정각 알림 제거';
       removeHourlyBtn.style.flex = '1';
       removeHourlyBtn.style.padding = '6px 12px';
       removeHourlyBtn.style.backgroundColor = 'rgba(255,80,80,0.2)';
@@ -713,6 +739,7 @@
       removeHourlyBtn.style.borderRadius = '4px';
       removeHourlyBtn.style.cursor = 'pointer';
       removeHourlyBtn.style.fontSize = '12px';
+      removeHourlyBtn.style.whiteSpace = 'nowrap';
       
       removeHourlyBtn.addEventListener('click', () => {
         if (confirm('모든 정각 알림을 제거하시겠습니까?')) {
@@ -764,13 +791,15 @@
         <strong style="color:${timeColor}">${formatAlarmTime(alarm.hour, alarm.minute)}</strong> 
         ${alarm.repeat ? '<span style="color:#ff9800;font-size:12px;margin-left:5px;">반복</span>' : ''}
         ${alarm.isHourly ? '<span style="color:#3f51b5;font-size:12px;margin-left:5px;">정각</span>' : ''}
-        <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px;">${alarm.title}</div>
+        <div class="alarm-title" title="${alarm.title}" style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px;">${alarm.title}</div>
       `;
+      
+      // 알람 정보에 클래스 추가
+      alarmInfo.className = 'alarm-info';
       
       // 컨트롤 영역 (삭제 및 토글 버튼)
       const controlsDiv = document.createElement('div');
-      controlsDiv.style.display = 'flex';
-      controlsDiv.style.gap = '8px';
+      controlsDiv.className = 'alarm-controls';
       
       // 활성화/비활성화 토글 버튼
       const toggleBtn = document.createElement('button');
