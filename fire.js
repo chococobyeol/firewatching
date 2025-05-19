@@ -909,18 +909,28 @@ window.addEventListener('load', () => {
   function drawGlow() {
     const glowX = fireCenterX;
     const glowY = fireCenterY - 60 * SCALE;
-    const maxGlow = Math.min(canvas.width, canvas.height) * 0.18 * SCALE * glowSize;
+    
+    // 클릭 시 빛무리 크기 증가 (clickEffect가 있을 때 크기 증가)
+    const glowSizeMultiplier = clickEffect > 0.05 ? 1 + clickEffect * 0.3 : 1.0;
+    const maxGlow = Math.min(canvas.width, canvas.height) * 0.18 * SCALE * glowSize * glowSizeMultiplier;
+    
     const grad = ctx.createRadialGradient(
       glowX, glowY, 0,
       glowX, glowY, maxGlow
     );
     
-    // 클릭 효과가 있을 때만 글로우 밝기 감소
-    const reducedGlowAlpha = clickEffect > 0.05 ? glowAlpha * 0.85 : glowAlpha;
+    // 클릭 효과가 있을 때 밝기도 증가
+    const brightnessMultiplier = clickEffect > 0.05 ? 1 + clickEffect * 0.4 : 1.0;
+    const adjustedGlowAlpha = glowAlpha * brightnessMultiplier;
     
-    grad.addColorStop(0, `rgba(255, 230, 120, ${reducedGlowAlpha})`);
-    grad.addColorStop(0.25, `rgba(255, 180, 60, ${reducedGlowAlpha * 0.55})`);
-    grad.addColorStop(0.6, `rgba(255, 120, 30, ${reducedGlowAlpha * 0.22})`);
+    // 알파값이 너무 높아지지 않도록 제한 (최대 1.0)
+    const cappedAlpha = Math.min(adjustedGlowAlpha, 0.25);
+    const cappedAlphaHalf = Math.min(adjustedGlowAlpha * 0.55, 0.15);
+    const cappedAlphaQuarter = Math.min(adjustedGlowAlpha * 0.22, 0.06);
+    
+    grad.addColorStop(0, `rgba(255, 230, 120, ${cappedAlpha})`);
+    grad.addColorStop(0.25, `rgba(255, 180, 60, ${cappedAlphaHalf})`);
+    grad.addColorStop(0.6, `rgba(255, 120, 30, ${cappedAlphaQuarter})`);
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.globalCompositeOperation = 'lighter';
