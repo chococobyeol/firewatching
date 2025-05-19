@@ -4,17 +4,32 @@
   // 페이지 활성화/비활성화 상태 추적 변수
   let isPageVisible = !document.hidden;
   let pendingAlarmPopup = null;
+  let lastVisibleTime = Date.now(); // 마지막으로 페이지가 보였던 시간 추적
 
   // 페이지 가시성 변화 이벤트 리스너 추가
   document.addEventListener('visibilitychange', () => {
-    isPageVisible = !document.hidden;
+    const now = Date.now();
     
-    // 페이지가 다시 활성화되었고 대기 중인 알람 팝업이 있으면 표시
-    if (isPageVisible && pendingAlarmPopup) {
-      document.body.appendChild(pendingAlarmPopup.containerDiv);
-      // 이벤트 리스너 다시 바인딩
-      setupAlarmPopupEvents(pendingAlarmPopup);
-      pendingAlarmPopup = null;
+    if (document.hidden) {
+      // 페이지가 숨겨질 때 시간 기록
+      lastVisibleTime = now;
+    } else {
+      // 페이지가 다시 보일 때
+      isPageVisible = true;
+      const hiddenDuration = now - lastVisibleTime;
+      
+      // 장시간(5분 이상) 절전모드 후 돌아온 경우, 대기 중인 알람 팝업 초기화
+      if (hiddenDuration > 5 * 60 * 1000 && pendingAlarmPopup) {
+        pendingAlarmPopup = null;
+      }
+      
+      // 대기 중인 알람 팝업이 있으면 표시
+      if (pendingAlarmPopup) {
+        document.body.appendChild(pendingAlarmPopup.containerDiv);
+        // 이벤트 리스너 다시 바인딩
+        setupAlarmPopupEvents(pendingAlarmPopup);
+        pendingAlarmPopup = null;
+      }
     }
   });
 
@@ -74,18 +89,12 @@
       
       <div class="setting-group" style="display:flex;justify-content:space-between;align-items:center;">
         <label style="color:#fff;font-size:14px;font-weight:500;">반복</label>
-        <label class="toggle-switch">
-          <input type="checkbox" id="alarmRepeat">
-          <span class="toggle-slider"></span>
-        </label>
+        <input type="checkbox" id="alarmRepeat" style="width:18px;height:18px;accent-color:#ff6b00;cursor:pointer;">
       </div>
       
       <div class="setting-group" style="display:flex;justify-content:space-between;align-items:center;">
         <label style="color:#fff;font-size:14px;font-weight:500;">알림소리</label>
-        <label class="toggle-switch">
-          <input type="checkbox" id="alarmSound" checked>
-          <span class="toggle-slider"></span>
-        </label>
+        <input type="checkbox" id="alarmSound" checked style="width:18px;height:18px;accent-color:#ff6b00;cursor:pointer;">
       </div>
       
       <div class="setting-group" style="display:flex;gap:10px;margin-top:10px;">
@@ -130,46 +139,7 @@
       background-color: rgba(200,200,200,0.4);
       border-radius: 4px;
     }
-    /* 토글 스위치 스타일 */
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 50px;
-      height: 24px;
-    }
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .toggle-slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(80, 80, 80, 0.5);
-      transition: .3s;
-      border-radius: 24px;
-    }
-    .toggle-slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .3s;
-      border-radius: 50%;
-    }
-    input:checked + .toggle-slider {
-      background-color: #ff6b00;
-    }
-    input:checked + .toggle-slider:before {
-      transform: translateX(26px);
-    }
+    /* 토글 스위치 스타일 제거 */
     #alarmList li {
       display: flex;
       justify-content: space-between;
@@ -230,19 +200,6 @@
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.9); }
       to { opacity: 1; transform: scale(1); }
-    }
-    .alarm-status {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 5px;
-    }
-    .alarm-active {
-      background-color: #4CAF50;
-    }
-    .alarm-muted {
-      background-color: #9E9E9E;
     }
   `;
   document.head.appendChild(style);
@@ -521,6 +478,7 @@
       const isHourly = alarm.isHourly === true;
       const iconColor = isHourly ? '#3f51b5' : '#ff6b00';
       
+      // 알람 아이콘 형태 업데이트
       const alarmIcon = isHourly ? 
         `<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>` :
         `<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
@@ -533,15 +491,9 @@
           
           <div style="display:flex;justify-content:center;align-items:center;margin:5px 0;">
             ${alarm.sound 
-              ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4zM15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`
-              : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6"></path></svg>`
+              ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`
+              : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"></path><path d="M22 9l-6 6"></path><path d="M16 9l6 6"></path></svg>`
             }
-          </div>
-          
-          <div style="display:flex;justify-content:center;margin:8px 0;">
-            <div style="width:10px;height:10px;background:#fff;border-radius:50%;margin:0 5px;opacity:0.8;"></div>
-            <div style="width:10px;height:10px;background:#fff;border-radius:50%;margin:0 5px;opacity:0.8;"></div>
-            <div style="width:10px;height:10px;background:#fff;border-radius:50%;margin:0 5px;opacity:0.8;"></div>
           </div>
           
           <h1 style="margin:0;color:${iconColor};font-size:60px;font-weight:700;line-height:1;">${alarmTime}</h1>
@@ -558,7 +510,8 @@
       const popupData = {
         containerDiv,
         alarm,
-        clickHandler: null // 이벤트 핸들러 참조를 저장할 속성
+        clickHandler: null, // 이벤트 핸들러 참조를 저장할 속성
+        createdAt: Date.now() // 알람 생성 시간 추가
       };
       
       // 페이지가 보이는 상태면 바로 표시, 아니면 보류
@@ -779,18 +732,19 @@
       
       const alarmInfo = document.createElement('div');
       
-      // 알람 소리 및 활성화 상태에 따른 표시
+      // 알람 소리 및 활성화 상태에 따른 표시 (소리 아이콘으로 변경)
       const soundStatus = alarm.sound ? 
-        '<span class="alarm-status alarm-active" title="알림소리 켜짐"></span>' : 
-        '<span class="alarm-status alarm-muted" title="알림소리 꺼짐"></span>';
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>' : 
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9E9E9E" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"></path><line x1="22" y1="2" x2="11" y2="13"></line><line x1="22" y1="16" x2="14" y2="16"></line></svg>';
       
       const timeColor = alarm.isHourly ? '#3f51b5' : '#ff6b00';
       
       alarmInfo.innerHTML = `
-        ${soundStatus}
-        <strong style="color:${timeColor}">${formatAlarmTime(alarm.hour, alarm.minute)}</strong> 
-        ${alarm.repeat ? '<span style="color:#ff9800;font-size:12px;margin-left:5px;">반복</span>' : ''}
-        ${alarm.isHourly ? '<span style="color:#3f51b5;font-size:12px;margin-left:5px;">정각</span>' : ''}
+        <div style="display:flex;align-items:center;gap:5px;">
+          <strong style="color:${timeColor}">${formatAlarmTime(alarm.hour, alarm.minute)}</strong> 
+          ${alarm.repeat ? '<span style="color:#ff9800;font-size:12px;margin-left:5px;">반복</span>' : ''}
+          ${alarm.isHourly ? '<span style="color:#3f51b5;font-size:12px;margin-left:5px;">정각</span>' : ''}
+        </div>
         <div class="alarm-title" title="${alarm.title}" style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px;">${alarm.title}</div>
       `;
       
@@ -804,8 +758,8 @@
       // 활성화/비활성화 토글 버튼
       const toggleBtn = document.createElement('button');
       toggleBtn.innerHTML = alarm.active ? 
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-6-6 6 6 0 00-6 6c0 7-3 9-3 9h18s-3-2-3-9z"></path><path d="M13.73 21a2 2 0 01-3.46 0"></path></svg>' :
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-6-6 6 6 0 00-6 6c0 7-3 9-3 9h18s-3-2-3-9z"></path><path d="M13.73 21a2 2 0 01-3.46 0"></path><line x1="1" y1="1" x2="23" y2="23" stroke-width="1.5"></line></svg>';
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-6-6 6 6 0 00-6 6c0 7-3 9-3 9h18s-3-2-3-9z"></path><path d="M13.73 21a2 2 0 01-3.46 0"></path></svg>' :
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-6-6 6 6 0 00-6 6c0 7-3 9-3 9h18s-3-2-3-9z"></path><path d="M13.73 21a2 2 0 01-3.46 0"></path><line x1="3" y1="3" x2="21" y2="21" stroke-width="1.5"></line></svg>';
       toggleBtn.title = alarm.active ? '비활성화' : '활성화';
       toggleBtn.style.color = alarm.active ? '#4CAF50' : '#9E9E9E';
       toggleBtn.style.background = 'none';
@@ -815,9 +769,23 @@
       toggleBtn.style.borderRadius = '4px';
       toggleBtn.addEventListener('click', () => toggleAlarmActive(alarm.id));
       
+      // 소리 토글 버튼 추가
+      const soundBtn = document.createElement('button');
+      soundBtn.innerHTML = alarm.sound ? 
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>' : 
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"></path><path d="M22 9l-6 6"></path><path d="M16 9l6 6"></path></svg>';
+      soundBtn.title = alarm.sound ? '소리 끄기' : '소리 켜기';
+      soundBtn.style.color = alarm.sound ? '#4CAF50' : '#9E9E9E';
+      soundBtn.style.background = 'none';
+      soundBtn.style.border = 'none';
+      soundBtn.style.cursor = 'pointer';
+      soundBtn.style.padding = '5px';
+      soundBtn.style.borderRadius = '4px';
+      soundBtn.addEventListener('click', () => toggleAlarmSound(alarm.id));
+      
       // 삭제 버튼
       const deleteBtn = document.createElement('button');
-      deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+      deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
       deleteBtn.title = '알람 삭제';
       deleteBtn.style.color = 'rgba(255,100,100,0.7)';
       deleteBtn.style.background = 'none';
@@ -827,7 +795,22 @@
       deleteBtn.style.borderRadius = '4px';
       deleteBtn.addEventListener('click', () => removeAlarm(alarm.id));
       
+      // 아이콘 색상 통일 - 알람이 켜져있을 때는 활성화 색상으로, 꺼져있을 때는 회색으로
+      if (alarm.active) {
+        // 활성화된 알람의 경우
+        const activeColor = alarm.isHourly ? '#3f51b5' : '#ff6b00'; // 정각알람은 파란색, 일반알람은 주황색
+        toggleBtn.style.color = activeColor;
+        if (alarm.sound) {
+          soundBtn.style.color = activeColor;
+        }
+      } else {
+        // 비활성화된 알람의 경우 모든 아이콘 회색
+        toggleBtn.style.color = '#9E9E9E';
+        soundBtn.style.color = '#9E9E9E';
+      }
+      
       controlsDiv.appendChild(toggleBtn);
+      controlsDiv.appendChild(soundBtn);
       controlsDiv.appendChild(deleteBtn);
       
       li.appendChild(alarmInfo);
@@ -838,6 +821,19 @@
   
   // 페이지 로드 시 저장된 알람 불러오기
   loadAlarms();
+
+  // 알람 소리 토글 함수 추가
+  function toggleAlarmSound(id) {
+    const alarm = alarms.find(a => a.id === id);
+    if (!alarm) return;
+    
+    // 소리 상태 토글
+    alarm.sound = !alarm.sound;
+    
+    // 저장 및 렌더링
+    saveAlarms();
+    renderAlarms();
+  }
 
   // 알람 활성화/비활성화 토글 함수
   function toggleAlarmActive(id) {
