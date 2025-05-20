@@ -71,94 +71,102 @@
       backdropFilter: 'blur(10px)', 
       overflowY: 'auto',
       fontFamily: "'Arial', sans-serif", 
-      color: '#fff'
+      color: '#fff',
+      display: 'flex',
+      flexDirection: 'column'
     });
     
     timerSidebar.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:16px;">
-        <h3 style="margin:0;font-size:18px;font-weight:600;">타이머 / 스톱워치</h3>
-        <button id="closeTimerSidebar" style="background:none;border:none;color:#fff;cursor:pointer;font-size:24px;padding:0;">&times;</button>
-      </div>
-      
-      <div class="timer-content" style="display:flex;flex-direction:column;gap:18px;">
-        <!-- 탭 네비게이션 -->
-        <div class="tab-navigation" style="display:flex;border-radius:4px;overflow:hidden;margin-bottom:10px;">
-          <button id="stopwatchTab" class="tab-button active" style="flex:1;padding:10px;background-color:#444;color:#fff;border:none;cursor:pointer;transition:background-color 0.3s;">
-            <div style="display:flex;align-items:center;justify-content:center;gap:5px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="6" x2="12" y2="12"></line>
-                <line x1="12" y1="12" x2="16" y2="14"></line>
-                <circle cx="12" cy="2" r="1.5"></circle>
-              </svg>
-              스톱워치
-            </div>
-          </button>
-          <button id="timerTab" class="tab-button" style="flex:1;padding:10px;background-color:#222;color:#ccc;border:none;cursor:pointer;transition:background-color 0.3s;">
-            <div style="display:flex;align-items:center;justify-content:center;gap:5px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2z"></path>
-              </svg>
-              타이머
-            </div>
-          </button>
+      <div style="display:flex;flex-direction:column;height:100%;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:16px;">
+          <h3 style="margin:0;font-size:18px;font-weight:600;">타이머 / 스톱워치</h3>
+          <button id="closeTimerSidebar" style="background:none;border:none;color:#fff;cursor:pointer;font-size:24px;padding:0;">&times;</button>
         </div>
         
-        <!-- 스톱워치 컨텐츠 -->
-        <div id="stopwatchContent" class="tab-content" style="display:block;">
-          <div class="time-display" style="text-align:center;margin:20px 0;font-size:42px;font-family:'Courier New',monospace;font-weight:300;">
-            <span id="stopwatchDisplay">00:00.00</span>
-          </div>
-          
-          <div class="controls" style="display:flex;gap:10px;margin-top:20px;">
-            <button id="stopwatchStartStop" style="flex:1;padding:12px;background:linear-gradient(to right, #FF7043, #E64A19);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
-              시작
+        <div class="timer-content" style="display:flex;flex-direction:column;gap:18px;flex-grow:1;height:calc(100% - 60px);">
+          <!-- 탭 네비게이션 -->
+          <div class="tab-navigation" style="display:flex;border-radius:4px;overflow:hidden;margin-bottom:10px;flex-shrink:0;">
+            <button id="stopwatchTab" class="tab-button active" style="flex:1;padding:10px;background-color:#444;color:#fff;border:none;cursor:pointer;transition:background-color 0.3s;">
+              <div style="display:flex;align-items:center;justify-content:center;gap:5px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="6" x2="12" y2="12"></line>
+                  <line x1="12" y1="12" x2="16" y2="14"></line>
+                  <circle cx="12" cy="2" r="1.5"></circle>
+                </svg>
+                스톱워치
+              </div>
             </button>
-            <button id="stopwatchReset" style="flex:1;padding:12px;background-color:#555;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
-              리셋
+            <button id="timerTab" class="tab-button" style="flex:1;padding:10px;background-color:#222;color:#ccc;border:none;cursor:pointer;transition:background-color 0.3s;">
+              <div style="display:flex;align-items:center;justify-content:center;gap:5px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2z"></path>
+                </svg>
+                타이머
+              </div>
             </button>
           </div>
           
-          <div id="lapContainer" style="margin-top:20px;max-height:200px;overflow-y:auto;">
-            <ul id="lapTimes" style="list-style:none;padding:0;margin:0;"></ul>
-          </div>
-        </div>
-        
-        <!-- 타이머 컨텐츠 -->
-        <div id="timerTabContent" class="tab-content" style="display:none;">
-          <div class="timer-setup" style="margin-bottom:20px;">
-            <div style="display:flex;align-items:center;gap:5px;justify-content:center;margin-bottom:15px;">
-              <input id="timerHours" type="number" min="0" max="23" value="0" style="width:60px;padding:10px;text-align:center;background-color:rgba(60,60,60,0.8);color:#fff;border:none;border-radius:4px;font-size:18px;">
-              <span style="font-size:24px;">:</span>
-              <input id="timerMinutes" type="number" min="0" max="59" value="0" style="width:60px;padding:10px;text-align:center;background-color:rgba(60,60,60,0.8);color:#fff;border:none;border-radius:4px;font-size:18px;">
-              <span style="font-size:24px;">:</span>
-              <input id="timerSeconds" type="number" min="0" max="59" value="0" style="width:60px;padding:10px;text-align:center;background-color:rgba(60,60,60,0.8);color:#fff;border:none;border-radius:4px;font-size:18px;">
+          <!-- 스톱워치 컨텐츠 -->
+          <div id="stopwatchContent" class="tab-content" style="height:100%;display:flex;flex-direction:column;">
+            <div class="time-display" style="text-align:center;margin:20px 0;font-size:42px;font-family:'Courier New',monospace;font-weight:300;">
+              <span id="stopwatchDisplay">00:00.00</span>
             </div>
             
-            <div class="preset-buttons" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;">
-              <button class="timer-preset" data-minutes="1" style="flex:1;min-width:70px;padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">1분</button>
-              <button class="timer-preset" data-minutes="3" style="flex:1;min-width:70px;padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">3분</button>
-              <button class="timer-preset" data-minutes="5" style="flex:1;min-width:70px;padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">5분</button>
-              <button class="timer-preset" data-minutes="10" style="flex:1;min-width:70px;padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">10분</button>
+            <div class="controls" style="display:flex;gap:10px;margin-top:10px;margin-bottom:20px;">
+              <button id="stopwatchStartStop" style="flex:1;padding:12px;background:linear-gradient(to right, #ff6b00, #ff9800);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
+                시작
+              </button>
+              <button id="stopwatchReset" style="flex:1;padding:12px;background-color:#555;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
+                리셋
+              </button>
+            </div>
+            
+            <div id="lapContainer" style="margin-top:0;max-height:350px;overflow-y:auto;flex-grow:1;">
+              <ul id="lapTimes" style="list-style:none;padding:0;margin:0;"></ul>
             </div>
           </div>
           
-          <div class="time-display" style="text-align:center;margin:20px 0;font-size:42px;font-family:'Courier New',monospace;font-weight:300;">
-            <span id="timerDisplay">00:00:00</span>
-          </div>
-          
-          <div class="controls" style="display:flex;gap:10px;margin-top:20px;">
-            <button id="timerStartStop" style="flex:1;padding:12px;background:linear-gradient(to right, #BF360C, #8D2700);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
-              시작
-            </button>
-            <button id="timerReset" style="flex:1;padding:12px;background-color:#555;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
-              리셋
-            </button>
+          <!-- 타이머 컨텐츠 -->
+          <div id="timerTabContent" class="tab-content" style="height:100%;display:none;flex-direction:column;">
+            <div class="timer-setup" style="margin-bottom:20px;flex-shrink:0;">
+              <div style="display:flex;align-items:center;gap:5px;justify-content:center;margin-bottom:15px;">
+                <input id="timerHours" type="number" min="0" max="23" value="0" style="width:60px;padding:10px;text-align:center;background-color:rgba(60,60,60,0.8);color:#fff;border:none;border-radius:4px;font-size:18px;">
+                <span style="font-size:24px;">:</span>
+                <input id="timerMinutes" type="number" min="0" max="59" value="0" style="width:60px;padding:10px;text-align:center;background-color:rgba(60,60,60,0.8);color:#fff;border:none;border-radius:4px;font-size:18px;">
+                <span style="font-size:24px;">:</span>
+                <input id="timerSeconds" type="number" min="0" max="59" value="0" style="width:60px;padding:10px;text-align:center;background-color:rgba(60,60,60,0.8);color:#fff;border:none;border-radius:4px;font-size:18px;">
+              </div>
+              
+              <div class="preset-buttons" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:15px;">
+                <button class="timer-preset" data-minutes="1" style="padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">1분</button>
+                <button class="timer-preset" data-minutes="3" style="padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">3분</button>
+                <button class="timer-preset" data-minutes="5" style="padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">5분</button>
+                <button class="timer-preset" data-minutes="10" style="padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">10분</button>
+                <button class="timer-preset" data-minutes="30" style="padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">30분</button>
+                <button class="timer-preset" data-hours="1" style="padding:8px;background-color:#333;color:#fff;border:none;border-radius:4px;cursor:pointer;">1시간</button>
+              </div>
+            </div>
+            
+            <div class="time-display" style="text-align:center;margin:20px 0;font-size:42px;font-family:'Courier New',monospace;font-weight:300;">
+              <span id="timerDisplay">00:00:00</span>
+            </div>
+            
+            <div class="controls" style="display:flex;gap:10px;margin-top:10px;margin-bottom:20px;">
+              <button id="timerStartStop" style="flex:1;padding:12px;background:linear-gradient(to right, #ff6b00, #ff9800);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
+                시작
+              </button>
+              <button id="timerReset" style="flex:1;padding:12px;background-color:#555;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
+                리셋
+              </button>
+            </div>
+            
+            <div style="flex-grow:1;"></div>
           </div>
         </div>
+        
+        <audio id="timerAudio" src="sounds/alarm.wav" preload="auto"></audio>
       </div>
-      
-      <audio id="timerAudio" src="sounds/alarm.wav" preload="auto"></audio>
     `;
     
     document.body.appendChild(timerSidebar);
@@ -175,11 +183,12 @@
       #lapTimes li {
         display: flex;
         justify-content: space-between;
-        padding: 8px 10px;
+        padding: 10px 12px;
         margin-bottom: 8px;
         background-color: rgba(60,60,60,0.5);
         border-radius: 4px;
         font-size: 14px;
+        border-left: 3px solid #ff6b00;
       }
       
       input[type=number]::-webkit-inner-spin-button, 
@@ -240,6 +249,25 @@
         user-select: none;
         display: none;
       }
+      
+      #lapContainer::-webkit-scrollbar {
+        width: 8px;
+        background-color: rgba(60,60,60,0.4);
+      }
+      
+      #lapContainer::-webkit-scrollbar-thumb {
+        background-color: rgba(200,200,200,0.4);
+        border-radius: 4px;
+      }
+      
+      @keyframes highlight {
+        0% { background-color: rgba(255, 107, 0, 0.3); }
+        100% { background-color: rgba(60, 60, 60, 0.5); }
+      }
+      
+      #lapTimes li.new-lap {
+        animation: highlight 1.5s ease-out forwards;
+      }
     `;
     
     document.head.appendChild(style);
@@ -281,6 +309,10 @@
       timerTab.addEventListener('click', () => switchTab('timer'));
     }
     
+    // 초기 탭 설정
+    console.log('초기 탭을 스톱워치로 설정합니다.');
+    switchTab('stopwatch');
+    
     // 스톱워치 컨트롤
     const stopwatchStartStop = document.getElementById('stopwatchStartStop');
     const stopwatchReset = document.getElementById('stopwatchReset');
@@ -308,12 +340,13 @@
     // 타이머 프리셋 버튼들
     document.querySelectorAll('.timer-preset').forEach(button => {
       button.addEventListener('click', function() {
-        const minutes = parseInt(this.getAttribute('data-minutes'));
+        const minutes = parseInt(this.getAttribute('data-minutes')) || 0;
+        const hours = parseInt(this.getAttribute('data-hours')) || 0;
         const hoursInput = document.getElementById('timerHours');
         const minutesInput = document.getElementById('timerMinutes');
         const secondsInput = document.getElementById('timerSeconds');
         
-        if (hoursInput) hoursInput.value = 0;
+        if (hoursInput) hoursInput.value = hours;
         if (minutesInput) minutesInput.value = minutes;
         if (secondsInput) secondsInput.value = 0;
         
@@ -357,7 +390,7 @@
     if (tab === 'stopwatch') {
       stopwatchTab.classList.add('active');
       timerTab.classList.remove('active');
-      stopwatchContent.style.display = 'block';
+      stopwatchContent.style.display = 'flex';
       timerTabContent.style.display = 'none';
       stopwatchTab.style.backgroundColor = '#444';
       stopwatchTab.style.color = '#fff';
@@ -367,12 +400,15 @@
       stopwatchTab.classList.remove('active');
       timerTab.classList.add('active');
       stopwatchContent.style.display = 'none';
-      timerTabContent.style.display = 'block';
+      timerTabContent.style.display = 'flex';
       timerTab.style.backgroundColor = '#444';
       timerTab.style.color = '#fff';
       stopwatchTab.style.backgroundColor = '#222';
       stopwatchTab.style.color = '#ccc';
     }
+    
+    // 디버그 로그
+    console.log(`탭 전환 후: stopwatch display: ${stopwatchContent.style.display}, timer display: ${timerTabContent.style.display}`);
   }
 
   // 스톱워치 기능
@@ -386,7 +422,7 @@
       // 중지
       clearInterval(stopwatchInterval);
       button.textContent = '재개';
-      button.style.background = 'linear-gradient(to right, #F57F17, #D84315)';
+      button.style.background = 'linear-gradient(to right, #ff6b00, #ff9800)';
       resetButton.textContent = '리셋';
       isStopwatchRunning = false;
     } else {
@@ -419,6 +455,12 @@
         const currentTime = formatStopwatchTime(stopwatchElapsedTime);
         const lapNumber = lapsList.children.length + 1;
         lapItem.innerHTML = `<span>랩 ${lapNumber}</span><span>${currentTime}</span>`;
+        lapItem.className = 'new-lap';
+        
+        // 기존 랩 타임에서 새 랩 표시 제거
+        const existingLaps = lapsList.querySelectorAll('li.new-lap');
+        existingLaps.forEach(lap => lap.classList.remove('new-lap'));
+        
         lapsList.prepend(lapItem);
       }
     } else {
@@ -434,7 +476,7 @@
       
       if (startButton) {
         startButton.textContent = '시작';
-        startButton.style.background = 'linear-gradient(to right, #FF7043, #E64A19)';
+        startButton.style.background = 'linear-gradient(to right, #ff6b00, #ff9800)';
       }
       
       if (button) {
@@ -479,10 +521,14 @@
       // 중지
       clearInterval(timerInterval);
       button.textContent = '재개';
-      button.style.background = 'linear-gradient(to right, #F57F17, #D84315)';
+      button.style.background = 'linear-gradient(to right, #ff6b00, #ff9800)';
       isTimerRunning = false;
+      
+      // 남은 시간 계산하여 저장
+      const now = Date.now();
+      timerDuration = timerEndTime - now; // 남은 시간 저장
     } else {
-      // 시작
+      // 시작 또는 재개
       if (timerEndTime === 0) {
         // 새 타이머 설정
         const hoursInput = document.getElementById('timerHours');
@@ -506,17 +552,13 @@
           minutes: minutes,
           seconds: seconds
         };
-        
-        timerEndTime = Date.now() + timerDuration;
-      } else {
-        // 일시정지된 타이머 재개
-        const remainingTime = timerEndTime - Date.now();
-        timerEndTime = Date.now() + remainingTime;
-      }
+      } 
+      // 이미 설정된 시간 또는 일시정지된 시간 사용
+      timerEndTime = Date.now() + timerDuration;
       
       timerInterval = setInterval(updateTimer, 500);
       button.textContent = '일시정지';
-      button.style.background = 'linear-gradient(to right, #BF360C, #8D2700)';
+      button.style.background = 'linear-gradient(to right, #B71C1C, #7F0000)';
       isTimerRunning = true;
       
       // 미니 타이머 표시
@@ -542,10 +584,11 @@
       clearInterval(timerInterval);
       display.textContent = '00:00:00';
       timerStartStop.textContent = '시작';
-      timerStartStop.style.background = 'linear-gradient(to right, #BF360C, #8D2700)';
+      timerStartStop.style.background = 'linear-gradient(to right, #ff6b00, #ff9800)';
       miniTimer.style.display = 'none';
       isTimerRunning = false;
       timerEndTime = 0;
+      timerDuration = 0; // 타이머 시간도 초기화
       
       // 알람 소리 재생
       const timerAudio = document.getElementById('timerAudio');
@@ -577,6 +620,7 @@
   function resetTimer() {
     clearInterval(timerInterval);
     timerEndTime = 0;
+    timerDuration = 0;
     
     const display = document.getElementById('timerDisplay');
     const button = document.getElementById('timerStartStop');
@@ -589,7 +633,7 @@
     
     if (button) {
       button.textContent = '시작';
-      button.style.background = 'linear-gradient(to right, #BF360C, #8D2700)';
+      button.style.background = 'linear-gradient(to right, #ff6b00, #ff9800)';
     }
     
     if (miniTimer) {
@@ -656,7 +700,7 @@
     `;
     
     // 타이머 아이콘 색상
-    const iconColor = '#BF360C';
+    const iconColor = '#ff6b00';
     
     // 설정한 시간 정보 가져오기
     let timerDescription = '설정한 시간이 끝났습니다.';
@@ -681,7 +725,7 @@
     
     popupDiv.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;">
-        <div style="width:80px;height:80px;background:${iconColor};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(191, 54, 12, 0.4);animation:pulse 1.5s infinite;margin-bottom:5px;">
+        <div style="width:80px;height:80px;background:${iconColor};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(255, 107, 0, 0.4);animation:pulse 1.5s infinite;margin-bottom:5px;">
           <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         </div>
         
