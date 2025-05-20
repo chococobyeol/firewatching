@@ -195,7 +195,7 @@
       background-color: rgba(255,80,80,0.3) !important;
       color: rgba(255,100,100,1) !important;
     }
-    @keyframes pulseScale {
+    @keyframes pulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
@@ -488,15 +488,18 @@
       
       alarmPopup.innerHTML = `
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;">
-          <div style="width:80px;height:80px;background:${iconColor};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(${isHourly ? '63, 81, 181' : '255, 107, 0'},0.4);animation:pulseScale 1.5s infinite;margin-bottom:5px;">
+          <div style="width:80px;height:80px;background:${iconColor};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(${isHourly ? '63, 81, 181' : '255, 107, 0'},0.4);animation:pulse 1.5s infinite;margin-bottom:5px;">
             ${alarmIcon}
           </div>
           
           <div style="display:flex;justify-content:center;align-items:center;margin:5px 0;">
-            ${alarm.sound 
-              ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`
-              : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4z"></path><path d="M22 9l-6 6"></path><path d="M16 9l6 6"></path></svg>`
-            }
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${alarm.sound ? iconColor : '#999'}" stroke-width="2">
+              <path d="M11 5L6 9H2v6h4l5 4z"></path>
+              ${alarm.sound 
+                ? '<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>'
+                : '<path d="M22 9l-6 6"></path><path d="M16 9l6 6"></path>'
+              }
+            </svg>
           </div>
           
           <h1 style="margin:0;color:${iconColor};font-size:60px;font-weight:700;line-height:1;">${alarmTime}</h1>
