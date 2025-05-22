@@ -174,9 +174,9 @@
           
           <div style="margin-bottom:20px;">
             <div style="margin-bottom:10px;color:#ddd;font-size:14px;">도시 이름으로 검색:</div>
-            <div style="display:flex;gap:10px;">
-              <input id="citySearchInput" type="text" placeholder="예: 서울, 부산, Tokyo..." style="flex:1;padding:10px;background-color:rgba(50,50,50,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px;">
-              <button id="searchCityBtn" style="padding:10px 15px;min-width:60px;white-space:nowrap;background-color:#ff9800;color:#fff;border:none;border-radius:4px;cursor:pointer;">검색</button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <input id="citySearchInput" type="text" placeholder="예: 서울, 부산, Tokyo..." style="flex:3;min-width:150px;padding:10px;background-color:rgba(50,50,50,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px;">
+              <button id="searchCityBtn" style="flex:1;min-width:50px;max-width:70px;padding:10px;background-color:#ff9800;color:#fff;border:none;border-radius:4px;cursor:pointer;">검색</button>
             </div>
           </div>
           
@@ -186,7 +186,6 @@
           
           <div style="display:flex;justify-content:flex-end;gap:10px;">
             <button id="resetLocationBtn" style="padding:8px 15px;background-color:#555;color:#fff;border:none;border-radius:4px;cursor:pointer;">초기화</button>
-            <button id="cancelLocationChange" style="padding:8px 15px;background-color:#555;color:#fff;border:none;border-radius:4px;cursor:pointer;">취소</button>
           </div>
         </div>
       </div>
@@ -201,18 +200,14 @@
           
           <div style="margin-bottom:20px;">
             <div style="margin-bottom:10px;color:#ddd;font-size:14px;">도시 이름으로 검색:</div>
-            <div style="display:flex;gap:10px;">
-              <input id="addCityInput" type="text" placeholder="예: 파리, 베이징, New York..." style="flex:1;padding:10px;background-color:rgba(50,50,50,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px;">
-              <button id="searchForAddBtn" style="padding:10px 15px;min-width:60px;white-space:nowrap;background-color:#ff9800;color:#fff;border:none;border-radius:4px;cursor:pointer;">검색</button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <input id="addCityInput" type="text" placeholder="예: 파리, 베이징, New York..." style="flex:3;min-width:150px;padding:10px;background-color:rgba(50,50,50,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px;">
+              <button id="searchForAddBtn" style="flex:1;min-width:50px;max-width:70px;padding:10px;background-color:#ff9800;color:#fff;border:none;border-radius:4px;cursor:pointer;">검색</button>
             </div>
           </div>
           
           <div id="addCityResults" style="max-height:200px;overflow-y:auto;margin-bottom:20px;">
             <!-- 검색 결과가 여기에 표시됩니다 -->
-          </div>
-          
-          <div style="display:flex;justify-content:flex-end;gap:10px;">
-            <button id="cancelAddCity" style="padding:8px 15px;background-color:#555;color:#fff;border:none;border-radius:4px;cursor:pointer;">취소</button>
           </div>
         </div>
       </div>
@@ -236,12 +231,10 @@
     const closeBtn = document.getElementById('closeWeatherSidebar');
     const changeLocationBtn = document.getElementById('changeLocationBtn');
     const closeLocationModal = document.getElementById('closeLocationModal');
-    const cancelLocationChange = document.getElementById('cancelLocationChange');
     const searchCityBtn = document.getElementById('searchCityBtn');
     const citySearchInput = document.getElementById('citySearchInput');
     const addCityBtn = document.getElementById('addCityBtn');
     const closeAddCityModal = document.getElementById('closeAddCityModal');
-    const cancelAddCity = document.getElementById('cancelAddCity');
     const searchForAddBtn = document.getElementById('searchForAddBtn');
     const addCityInput = document.getElementById('addCityInput');
     const editCitiesBtn = document.getElementById('editCitiesBtn');
@@ -263,11 +256,6 @@
     // 위치 모달 닫기
     if (closeLocationModal) {
       closeLocationModal.addEventListener('click', hideLocationModal);
-    }
-    
-    // 위치 변경 취소
-    if (cancelLocationChange) {
-      cancelLocationChange.addEventListener('click', hideLocationModal);
     }
     
     // 위치 초기화 버튼
@@ -310,11 +298,6 @@
     // 도시 추가 모달 닫기
     if (closeAddCityModal) {
       closeAddCityModal.addEventListener('click', hideAddCityModal);
-    }
-    
-    // 도시 추가 취소
-    if (cancelAddCity) {
-      cancelAddCity.addEventListener('click', hideAddCityModal);
     }
     
     // 도시 추가 검색 버튼
