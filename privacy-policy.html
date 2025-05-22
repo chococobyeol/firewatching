@@ -72,6 +72,12 @@
       font-size: 14px;
       transition: background-color 0.3s;
       cursor: pointer;
+      border: none;
+      font-family: 'Noto Sans KR', sans-serif;
+      outline: none;
+      text-align: center;
+      appearance: none;
+      -webkit-appearance: none;
     }
     
     .back-button:hover {
@@ -158,20 +164,26 @@
     <h2>8. 개인정보 처리방침 변경</h2>
     <p>이 개인정보처리방침은 2025년 5월 23일부터 적용됩니다. 정책 변경 시 웹사이트를 통해 공지하며, 중요한 변경사항이 있는 경우 시행 7일 전부터 안내합니다.</p>
     
-    <a href="javascript:void(0);" class="back-button" id="backButton"><i class="fas fa-arrow-left"></i> 돌아가기</a>
+    <button onclick="location.href='index.html'" class="back-button" id="backButton"><i class="fas fa-arrow-left"></i> 돌아가기</button>
   </div>
   
-  <!-- 뒤로가기 버튼 작동을 위한 스크립트 -->
+  <!-- 삼성 브라우저 호환성을 위한 추가 스크립트 -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const backButton = document.getElementById('backButton');
-      if (backButton) {
-        backButton.addEventListener('click', function(e) {
-          e.preventDefault();
-          window.history.back();
+    // 페이지가 완전히 로드된 후 실행
+    window.onload = function() {
+      // 버튼 이벤트 강화
+      var backButton = document.getElementById('backButton');
+      if(backButton) {
+        backButton.addEventListener('click', function() {
+          window.location.href = 'index.html';
+        });
+        
+        // 터치 이벤트 추가 (모바일 브라우저용)
+        backButton.addEventListener('touchend', function() {
+          window.location.href = 'index.html';
         });
       }
-    });
+    };
   </script>
 </body>
 </html> 
