@@ -456,6 +456,9 @@ window.addEventListener('load', () => {
     
     <div style="position:absolute;bottom:20px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.5);font-size:12px;">
       <p>화면을 클릭하여 불을 켜보세요!</p>
+      <div style="margin-top:15px;border-top:1px solid rgba(255,255,255,0.2);padding-top:15px;">
+        <a href="privacy-policy.html" style="color:rgba(255,255,255,0.5);text-decoration:none;font-size:12px;display:block;transition:color 0.3s;">개인정보처리방침</a>
+      </div>
     </div>
   `;
   document.body.appendChild(sidebar);
