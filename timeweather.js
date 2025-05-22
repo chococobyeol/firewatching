@@ -93,7 +93,7 @@
     // 사이드바에 날씨/시간 버튼 추가
     const weatherBtn = document.createElement('button');
     weatherBtn.id = 'weatherBtn';
-    weatherBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="6" x2="12" y2="12"></line><line x1="12" y1="12" x2="16" y2="16"></line><path d="M19 6 a 9 9 0 0 0 -9 -3 a 9 9 0 0 0 -6 3"></path></svg>';
+    weatherBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="6" x2="12" y2="12"></line><line x1="12" y1="12" x2="16" y2="14"></line></svg>';
     Object.assign(weatherBtn.style, {
       position: 'fixed', 
       top: '140px', 
