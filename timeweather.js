@@ -12,9 +12,13 @@
   ];
   let citiesData = [...defaultCities];
   let weatherData = {};
+  let weatherCache = {}; // 날씨 캐시 데이터 저장
   let updateInterval;
   let userCurrentLocation = null;
   let isEditMode = false;
+  let pendingRequests = 0; // 진행 중인 API 요청 수 추적
+  const CACHE_DURATION = 30 * 60 * 1000; // 캐시 유효 시간 (30분)
+  const REQUEST_DELAY = 300; // API 요청 간 지연 시간 (밀리초)
   
   // 사용자 설정 저장/불러오기
   function saveUserSettings() {
@@ -27,6 +31,27 @@
       localStorage.setItem('weatherSettings', JSON.stringify(settings));
     } catch (e) {
       console.error('설정 저장 실패:', e);
+    }
+  }
+  
+  // 날씨 캐시 저장/불러오기
+  function saveWeatherCache() {
+    try {
+      localStorage.setItem('weatherCache', JSON.stringify(weatherCache));
+    } catch (e) {
+      console.error('날씨 캐시 저장 실패:', e);
+    }
+  }
+  
+  function loadWeatherCache() {
+    try {
+      const cachedData = localStorage.getItem('weatherCache');
+      if (cachedData) {
+        weatherCache = JSON.parse(cachedData);
+      }
+    } catch (e) {
+      console.error('날씨 캐시 불러오기 실패:', e);
+      weatherCache = {};
     }
   }
   
@@ -55,6 +80,9 @@
   document.addEventListener('DOMContentLoaded', function() {
     // 사용자 설정 불러오기
     loadUserSettings();
+    
+    // 날씨 캐시 불러오기
+    loadWeatherCache();
     
     // UI 초기화
     initWeatherUI();
@@ -474,7 +502,7 @@
     // 컨테이너 초기화
     container.innerHTML = '';
     
-    // 도시별 카드 추가
+    // 도시별 카드 추가 - 각 도시 카드를 생성하고 순차적으로 날씨 데이터 요청
     citiesData.forEach((city, index) => {
       const cityCardId = `city-${city.name}`;
       
@@ -540,8 +568,10 @@
         }
       }
       
-      // 날씨 데이터 가져오기
-      fetchWeatherData(city);
+      // 날씨 데이터 요청 - 지연 시간 추가하여 순차적으로 요청
+      setTimeout(() => {
+        fetchWeatherData(city);
+      }, index * REQUEST_DELAY); // 각 도시마다 일정 간격으로 요청
     });
     
     // 편집 모드일 때 컨테이너에 드래그 이벤트 리스너 추가
@@ -653,12 +683,14 @@
         locationName.textContent = userCurrentLocation.name;
       }
       
-      // 날씨 데이터 가져오기
-      fetchWeatherData({
-        name: userCurrentLocation.name,
-        lat: userCurrentLocation.lat,
-        lon: userCurrentLocation.lon
-      }, 'currentLocationCard');
+      // 날씨 데이터 가져오기 - IP API 요청을 피하기 위해 살짝 지연
+      setTimeout(() => {
+        fetchWeatherData({
+          name: userCurrentLocation.name,
+          lat: userCurrentLocation.lat,
+          lon: userCurrentLocation.lon
+        }, 'currentLocationCard');
+      }, 100);
       
       return;
     }
@@ -694,12 +726,14 @@
             locationName.textContent = userLocation.name;
           }
           
-          // 날씨 데이터 가져오기
-          fetchWeatherData({
-            name: userLocation.name,
-            lat: userLocation.lat,
-            lon: userLocation.lon
-          }, 'currentLocationCard');
+          // 날씨 데이터 가져오기 - IP API 요청을 피하기 위해 살짝 지연
+          setTimeout(() => {
+            fetchWeatherData({
+              name: userLocation.name,
+              lat: userLocation.lat,
+              lon: userLocation.lon
+            }, 'currentLocationCard');
+          }, 100);
         } else {
           throw new Error('IP 위치 정보에 필요한 데이터가 없습니다');
         }
@@ -761,12 +795,38 @@
   // Open-Meteo API로 날씨 정보 가져오기
   function fetchWeatherData(city, cardId = null) {
     const targetCardId = cardId || `city-${city.name}`;
+    const cacheKey = `${city.lat}_${city.lon}`;
+    
+    // 캐시된 데이터 확인
+    const now = Date.now();
+    if (weatherCache[cacheKey] && weatherCache[cacheKey].timestamp > now - CACHE_DURATION) {
+      // 캐시된 데이터가 유효하면 사용
+      updateWeatherUI(city.name, weatherCache[cacheKey].data, targetCardId);
+      return;
+    }
+    
+    // 진행 중인 요청이 너무 많으면 잠시 대기 후 다시 시도
+    if (pendingRequests >= 3) {
+      setTimeout(() => fetchWeatherData(city, cardId), 1000);
+      return;
+    }
+    
+    pendingRequests++;
     
     // Open-Meteo API URL
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weather_code&timezone=auto`;
     
     fetch(weatherUrl)
       .then(response => {
+        pendingRequests--;
+        
+        if (response.status === 429) {
+          // 요청 제한에 걸린 경우 3초 후 재시도
+          console.log(`API 요청 제한 (${city.name}), 3초 후 재시도합니다.`);
+          setTimeout(() => fetchWeatherData(city, cardId), 3000);
+          throw new Error('API 요청 제한 초과');
+        }
+        
         if (!response.ok) {
           throw new Error('날씨 데이터를 가져오는데 실패했습니다');
         }
@@ -777,20 +837,44 @@
           // 날씨 데이터 저장
           weatherData[city.name] = data.current;
           
+          // 캐시에 저장
+          weatherCache[cacheKey] = {
+            data: data.current,
+            timestamp: now
+          };
+          saveWeatherCache();
+          
           // UI 업데이트
           updateWeatherUI(city.name, data.current, targetCardId);
         }
       })
       .catch(error => {
-        console.error(`${city.name} 날씨 API 오류:`, error);
+        pendingRequests--;
         
-        // 에러 UI 표시
-        const weatherIcon = document.querySelector(`#${targetCardId} .weather-icon`);
-        const weatherTemp = document.querySelector(`#${targetCardId} .weather-temp`);
+        // API 요청 제한 오류가 아닌 경우에만 콘솔에 오류 출력
+        if (error.message !== 'API 요청 제한 초과') {
+          console.error(`${city.name} 날씨 API 오류:`, error);
+        }
         
-        if (weatherIcon && weatherTemp) {
-          weatherIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
-          weatherTemp.textContent = '날씨 정보 없음';
+        // 캐시된 데이터가 있으면 오래된 데이터라도 사용
+        if (weatherCache[cacheKey]) {
+          console.log(`${city.name} 캐시된 날씨 데이터 사용 (오래됨)`);
+          updateWeatherUI(city.name, weatherCache[cacheKey].data, targetCardId);
+          
+          // 오류 아이콘 변경으로 오래된 데이터임을 표시
+          const weatherIcon = document.querySelector(`#${targetCardId} .weather-icon`);
+          if (weatherIcon) {
+            weatherIcon.innerHTML = '<i class="fas fa-history"></i>';
+          }
+        } else {
+          // 에러 UI 표시
+          const weatherIcon = document.querySelector(`#${targetCardId} .weather-icon`);
+          const weatherTemp = document.querySelector(`#${targetCardId} .weather-temp`);
+          
+          if (weatherIcon && weatherTemp) {
+            weatherIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+            weatherTemp.textContent = '날씨 정보 없음';
+          }
         }
       });
   }
