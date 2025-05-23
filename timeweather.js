@@ -153,17 +153,17 @@
         <button id="closeWeatherSidebar" style="background:none;border:none;color:#fff;cursor:pointer;font-size:24px;padding:0;">&times;</button>
       </div>
       
-      <div id="currentLocationCard" class="location-card" style="margin-bottom:20px;padding:15px;background:linear-gradient(to right, rgba(30,30,30,0.9), rgba(50,50,50,0.9));border-radius:8px;border-left:4px solid #ff9800;">
+      <div id="currentLocationCard" class="location-card" style="margin-bottom:20px;padding:15px;background-color:rgba(40,40,40,0.8);border-radius:8px;border-left:4px solid #ff9800;">
         <div class="location-top" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <div class="location-name" style="font-size:18px;font-weight:500;">현재 위치</div>
-          <div class="location-time" style="font-size:22px;font-weight:600;">--:--</div>
+          <div class="location-name" style="font-size:16px;font-weight:500;">현재 위치</div>
+          <div class="location-time" style="font-size:24px;font-weight:500;">--:--</div>
         </div>
         <div class="location-weather" style="display:flex;align-items:center;gap:10px;">
-          <div class="weather-icon" style="font-size:24px;"><i class="fas fa-circle-notch fa-spin"></i></div>
-          <div class="weather-temp" style="font-size:18px;">로딩 중...</div>
+          <div class="weather-icon" style="font-size:20px;"><i class="fas fa-circle-notch fa-spin"></i></div>
+          <div class="weather-temp" style="font-size:16px;">로딩 중...</div>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-top:10px;">
-          <button id="changeLocationBtn" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:12px;padding:2px 8px;border-radius:4px;display:flex;align-items:center;gap:4px;transition:all 0.2s;">
+          <button id="changeLocationBtn" style="background:rgba(60,60,60,0.8);color:#fff;cursor:pointer;font-size:14px;padding:6px 12px;border-radius:4px;display:flex;align-items:center;gap:4px;transition:all 0.2s;border:none;">
             <i class="fas fa-map-marker-alt"></i> 위치 변경
           </button>
         </div>
@@ -172,13 +172,13 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1);">
         <h4 style="margin:0;font-size:16px;font-weight:500;">주요 도시</h4>
         <div>
-          <button id="addCityBtn" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:2px 8px;border-radius:4px;transition:all 0.2s;">
+          <button id="addCityBtn" style="background:rgba(50,50,50,0.8);border:none;color:#fff;cursor:pointer;font-size:14px;padding:4px 8px;border-radius:4px;transition:all 0.2s;">
             <i class="fas fa-plus-circle"></i>
           </button>
-          <button id="editCitiesBtn" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:2px 8px;border-radius:4px;transition:all 0.2s;">
+          <button id="editCitiesBtn" style="background:rgba(50,50,50,0.8);border:none;color:#fff;cursor:pointer;font-size:14px;padding:4px 8px;border-radius:4px;transition:all 0.2s;">
             <i class="fas fa-edit"></i>
           </button>
-          <button id="resetCitiesBtn" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:2px 8px;border-radius:4px;transition:all 0.2s;">
+          <button id="resetCitiesBtn" style="background:rgba(50,50,50,0.8);border:none;color:#fff;cursor:pointer;font-size:14px;padding:4px 8px;border-radius:4px;transition:all 0.2s;">
             <i class="fas fa-undo"></i>
           </button>
         </div>
@@ -201,10 +201,10 @@
           </div>
           
           <div style="margin-bottom:20px;">
-            <div style="margin-bottom:10px;color:#ddd;font-size:14px;">도시 이름으로 검색:</div>
+            <div style="margin-bottom:10px;color:#ddd;font-size:14px;font-weight:500;">도시 이름으로 검색:</div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <input id="citySearchInput" type="text" placeholder="예: 서울, 부산, Tokyo..." style="flex:3;min-width:150px;padding:10px;background-color:rgba(50,50,50,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px;">
-              <button id="searchCityBtn" style="flex:1;min-width:50px;max-width:70px;padding:10px;background-color:#ff9800;color:#fff;border:none;border-radius:4px;cursor:pointer;">검색</button>
+              <input id="citySearchInput" type="text" placeholder="예: 서울, 부산, Tokyo..." style="flex:3;min-width:150px;padding:10px;background-color:rgba(60,60,60,0.8);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px;">
+              <button id="searchCityBtn" style="flex:1;min-width:50px;max-width:70px;padding:10px;background:linear-gradient(to right, #ff6b00, #ff9800);color:#fff;border:none;border-radius:4px;cursor:pointer;">검색</button>
             </div>
           </div>
           
@@ -227,10 +227,10 @@
           </div>
           
           <div style="margin-bottom:20px;">
-            <div style="margin-bottom:10px;color:#ddd;font-size:14px;">도시 이름으로 검색:</div>
+            <div style="margin-bottom:10px;color:#ddd;font-size:14px;font-weight:500;">도시 이름으로 검색:</div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <input id="addCityInput" type="text" placeholder="예: 파리, 베이징, New York..." style="flex:3;min-width:150px;padding:10px;background-color:rgba(50,50,50,0.9);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px;">
-              <button id="searchForAddBtn" style="flex:1;min-width:50px;max-width:70px;padding:10px;background-color:#ff9800;color:#fff;border:none;border-radius:4px;cursor:pointer;">검색</button>
+              <input id="addCityInput" type="text" placeholder="예: 파리, 베이징, New York..." style="flex:3;min-width:150px;padding:10px;background-color:rgba(60,60,60,0.8);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px;">
+              <button id="searchForAddBtn" style="flex:1;min-width:50px;max-width:70px;padding:10px;background:linear-gradient(to right, #ff6b00, #ff9800);color:#fff;border:none;border-radius:4px;cursor:pointer;">검색</button>
             </div>
           </div>
           
@@ -510,7 +510,7 @@
       const cityCard = document.createElement('div');
       cityCard.id = cityCardId;
       cityCard.className = 'location-card';
-      cityCard.style.cssText = 'margin-bottom:12px;padding:12px;background:rgba(40,40,40,0.6);border-radius:8px;position:relative;';
+      cityCard.style.cssText = 'margin-bottom:12px;padding:12px;background-color:rgba(40,40,40,0.6);border-radius:8px;position:relative;';
       
       // 편집 모드일 때 드래그 가능하도록 설정
       if (isEditMode) {
@@ -528,7 +528,7 @@
       let cardContent = `
         <div class="location-top" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <div class="location-name" style="font-size:16px;font-weight:500;">${city.name}</div>
-          <div class="location-time" style="font-size:20px;font-weight:600;padding-right:${isEditMode ? '30px' : '0'};">--:--</div>
+          <div class="location-time" style="font-size:24px;font-weight:500;padding-right:${isEditMode ? '30px' : '0'};">--:--</div>
         </div>
         <div class="location-weather" style="display:flex;align-items:center;gap:10px;">
           <div class="weather-icon" style="font-size:20px;"><i class="fas fa-circle-notch fa-spin"></i></div>
@@ -539,8 +539,13 @@
       // 편집 모드일 때 삭제 버튼 추가
       if (isEditMode) {
         cardContent += `
-          <div class="delete-btn" style="position:absolute;top:12px;right:12px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;background-color:rgba(220,53,69,0.8);color:white;cursor:pointer;font-size:14px;border-radius:50%;" data-city="${city.name}">
-            <i class="fas fa-times"></i>
+          <div class="delete-btn" style="position:absolute;top:12px;right:12px;padding:5px;background:none;color:rgba(255,100,100,0.7);cursor:pointer;border:none;border-radius:4px;" data-city="${city.name}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
           </div>
         `;
       }
@@ -555,15 +560,6 @@
           deleteBtn.addEventListener('click', (e) => {
             const cityName = e.currentTarget.getAttribute('data-city');
             removeCity(cityName);
-          });
-          
-          // 호버 효과 추가
-          deleteBtn.addEventListener('mouseover', () => {
-            deleteBtn.style.backgroundColor = 'rgba(220,53,69,1)';
-          });
-          
-          deleteBtn.addEventListener('mouseout', () => {
-            deleteBtn.style.backgroundColor = 'rgba(220,53,69,0.8)';
           });
         }
       }
