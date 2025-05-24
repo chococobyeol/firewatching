@@ -419,7 +419,113 @@ window.addEventListener('load', () => {
   let fireStrength = 5;
   let glowSize = 1.5;
   let glowAlpha = 0.15;
+  let smokeStrength = 1.0; // 연기 강도 추가
   soundVolume = 0.5; // 기본 볼륨값 추가
+
+  // 로컬스토리지에서 설정 불러오기
+  function loadSettings() {
+    try {
+      const saved = localStorage.getItem('campfireSettings');
+      if (saved) {
+        const settings = JSON.parse(saved);
+        fireStrength = settings.fireStrength ?? 5;
+        glowSize = settings.glowSize ?? 1.5;
+        glowAlpha = settings.glowAlpha ?? 0.15;
+        smokeStrength = settings.smokeStrength ?? 1.0;
+        soundVolume = settings.soundVolume ?? 0.5;
+        isMuted = settings.isMuted ?? false;
+        isSmokeEnabled = settings.isSmokeEnabled ?? true;
+        isSkyEnabled = settings.isSkyEnabled ?? true;
+        isBgEnabled = settings.isBgEnabled ?? true;
+        campfireOffsetX = settings.campfireOffsetX ?? 0;
+        campfireOffsetY = settings.campfireOffsetY ?? 230;
+      }
+    } catch (e) {
+      console.log('설정 불러오기 실패:', e);
+    }
+  }
+
+  // 로컬스토리지에 설정 저장
+  function saveSettings() {
+    try {
+      const settings = {
+        fireStrength,
+        glowSize,
+        glowAlpha,
+        smokeStrength,
+        soundVolume,
+        isMuted,
+        isSmokeEnabled,
+        isSkyEnabled,
+        isBgEnabled,
+        campfireOffsetX,
+        campfireOffsetY
+      };
+      localStorage.setItem('campfireSettings', JSON.stringify(settings));
+    } catch (e) {
+      console.log('설정 저장 실패:', e);
+    }
+  }
+
+  // 설정 초기화
+  function resetSettings() {
+    fireStrength = 5;
+    glowSize = 1.5;
+    glowAlpha = 0.15;
+    smokeStrength = 1.0;
+    soundVolume = 0.5;
+    isMuted = false;
+    isSmokeEnabled = true;
+    isSkyEnabled = true;
+    isBgEnabled = true;
+    campfireOffsetX = 0;
+    campfireOffsetY = 230;
+    
+    // UI 업데이트
+    updateSettingsUI();
+    updateLayout();
+    saveSettings();
+  }
+
+  // 설정 UI 업데이트
+  function updateSettingsUI() {
+    const fireStrengthSlider = document.getElementById('fireStrength');
+    const glowSizeSlider = document.getElementById('glowSize');
+    const glowAlphaSlider = document.getElementById('glowAlpha');
+    const smokeStrengthSlider = document.getElementById('smokeStrength');
+    const soundVolumeSlider = document.getElementById('soundVolume');
+    const soundToggle = document.getElementById('soundToggle');
+    const smokeToggle = document.getElementById('smokeToggle');
+    const skyToggle = document.getElementById('skyToggle');
+    const bgToggle = document.getElementById('bgToggle');
+    const offsetXSlider = document.getElementById('offsetX');
+    const offsetYSlider = document.getElementById('offsetY');
+
+    if (fireStrengthSlider) fireStrengthSlider.value = fireStrength;
+    if (glowSizeSlider) glowSizeSlider.value = glowSize;
+    if (glowAlphaSlider) glowAlphaSlider.value = glowAlpha;
+    if (smokeStrengthSlider) smokeStrengthSlider.value = smokeStrength;
+    if (soundVolumeSlider) soundVolumeSlider.value = soundVolume;
+    if (soundToggle) soundToggle.checked = !isMuted;
+    if (smokeToggle) smokeToggle.checked = isSmokeEnabled;
+    if (skyToggle) skyToggle.checked = isSkyEnabled;
+    if (bgToggle) bgToggle.checked = isBgEnabled;
+    if (offsetXSlider) offsetXSlider.value = campfireOffsetX;
+    if (offsetYSlider) offsetYSlider.value = campfireOffsetY;
+
+    // 볼륨 적용
+    if (!isMuted) {
+      fireNormalSound.volume = soundVolume;
+      fireIgnitionSound.volume = soundVolume;
+      currentAudio.volume = soundVolume;
+    }
+  }
+
+  // 설정 불러오기
+  loadSettings();
+  
+  // 설정 불러온 후 레이아웃 업데이트 (캠프파이어 위치 적용)
+  updateLayout();
 
   // 설정 버튼 및 사이드바 추가
   const settingsBtn = document.createElement('button');
@@ -469,6 +575,7 @@ window.addEventListener('load', () => {
   sidebar.style.zIndex = '101';
   sidebar.style.backdropFilter = 'blur(10px)';
   sidebar.style.fontFamily = "'Arial', sans-serif";
+  sidebar.style.overflowY = 'auto';
 
   // 사이드바 내용 스타일링 개선
   sidebar.innerHTML = `
@@ -477,76 +584,90 @@ window.addEventListener('load', () => {
       <button id="closeSettings" style="background:none;border:none;color:#fff;cursor:pointer;font-size:24px;padding:0;">&times;</button>
     </div>
     
-    <div style="display:flex;flex-direction:column;gap:18px;">
-      <div class="setting-group">
-        <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">불꽃 강도</label>
-        <input id="fireStrength" type="range" min="0.5" max="9.5" step="0.01" value="${fireStrength}" 
-               style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
-      </div>
-      
-      <div class="setting-group">
-        <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 크기</label>
-        <input id="glowSize" type="range" min="0" max="3" step="0.01" value="${glowSize}" 
-               style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
-      </div>
-      
-      <div class="setting-group">
-        <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 밝기</label>
-        <input id="glowAlpha" type="range" min="0" max="0.3" step="0.01" value="${glowAlpha}" 
-               style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
-      </div>
-      
-      <div class="setting-group" style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.2);padding-top:16px;">
-        <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">소리 볼륨</label>
-        <input id="soundVolume" type="range" min="0" max="1" step="0.01" value="${soundVolume}" 
-               style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
-      </div>
-      
-      <div style="display:flex;flex-direction:column;gap:14px;margin-top:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <label style="color:#fff;font-size:14px;font-weight:500;">소리</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="soundToggle" checked>
-            <span class="toggle-slider"></span>
-          </label>
+    <div style="max-height:calc(100vh - 200px);overflow-y:auto;padding-right:5px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.3) transparent;">
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div class="setting-group">
+          <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">불꽃 강도</label>
+          <input id="fireStrength" type="range" min="0.5" max="9.5" step="0.01" value="${fireStrength}" 
+                 style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
         </div>
         
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <label style="color:#fff;font-size:14px;font-weight:500;">연기 효과</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="smokeToggle" checked>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <label style="color:#fff;font-size:14px;font-weight:500;">밤하늘</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="skyToggle" checked>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <label style="color:#fff;font-size:14px;font-weight:500;">배경 이미지</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="bgToggle" checked>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
         <div class="setting-group">
-          <label style="color:#fff;font-size:14px;font-weight:500;">모닥불 X 위치</label>
-          <input id="offsetX" type="range" min="-500" max="500" step="1" value="${campfireOffsetX}"
+          <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 크기</label>
+          <input id="glowSize" type="range" min="0" max="3" step="0.01" value="${glowSize}" 
                  style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
         </div>
+        
         <div class="setting-group">
-          <label style="color:#fff;font-size:14px;font-weight:500;">모닥불 Y 위치</label>
-          <input id="offsetY" type="range" min="-500" max="500" step="1" value="${campfireOffsetY}"
+          <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">빛무리 밝기</label>
+          <input id="glowAlpha" type="range" min="0" max="0.3" step="0.01" value="${glowAlpha}" 
                  style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+        </div>
+        
+        <div class="setting-group">
+          <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">연기 강도</label>
+          <input id="smokeStrength" type="range" min="0" max="3" step="0.01" value="${smokeStrength}" 
+                 style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+        </div>
+        
+        <div class="setting-group" style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.2);padding-top:16px;">
+          <label style="color:#fff;margin-bottom:8px;display:block;font-size:14px;font-weight:500;">소리 볼륨</label>
+          <input id="soundVolume" type="range" min="0" max="1" step="0.01" value="${soundVolume}" 
+                 style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+        </div>
+        
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <label style="color:#fff;font-size:14px;font-weight:500;">소리</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="soundToggle" ${!isMuted ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <label style="color:#fff;font-size:14px;font-weight:500;">연기 효과</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="smokeToggle" ${isSmokeEnabled ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <label style="color:#fff;font-size:14px;font-weight:500;">밤하늘</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="skyToggle" ${isSkyEnabled ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <label style="color:#fff;font-size:14px;font-weight:500;">배경 이미지</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="bgToggle" ${isBgEnabled ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-group">
+            <label style="color:#fff;font-size:14px;font-weight:500;">모닥불 X 위치</label>
+            <input id="offsetX" type="range" min="-500" max="500" step="1" value="${campfireOffsetX}"
+                   style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+          </div>
+          <div class="setting-group">
+            <label style="color:#fff;font-size:14px;font-weight:500;">모닥불 Y 위치</label>
+            <input id="offsetY" type="range" min="-500" max="500" step="1" value="${campfireOffsetY}"
+                   style="width:100%;height:5px;-webkit-appearance:none;background:linear-gradient(to right, #ff6b00, #ffc107);border-radius:3px;outline:none;">
+          </div>
+          
+          <!-- 설정 초기화 버튼 -->
+          <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.2);padding-top:16px;margin-bottom:20px;">
+            <button id="resetSettings" style="width:100%;padding:10px;background-color:rgba(255,80,80,0.2);color:rgba(255,80,80,0.9);border:none;border-radius:4px;cursor:pointer;font-weight:500;font-size:14px;transition:all 0.2s;">
+              설정 초기화
+            </button>
+          </div>
         </div>
       </div>
     </div>
     
     <div style="position:absolute;bottom:20px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.5);font-size:12px;">
-      <p>화면을 클릭하여 불을 켜보세요!</p>
       <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.4);">
         <div>Device Pixel Ratio: <span id="dprInfo">${getOptimalDPR().toFixed(2)}</span></div>
         <div>GPU 최적화: <span id="gpuOptInfo">${isHighPerformanceGPU() ? '활성화' : '비활성화'}</span></div>
@@ -625,6 +746,35 @@ window.addEventListener('load', () => {
     input:checked + .toggle-slider:before {
       transform: translateX(26px);
     }
+    
+    /* 초기화 버튼 호버 효과 */
+    #resetSettings:hover {
+      background-color: rgba(255,80,80,0.3) !important;
+      color: rgba(255,100,100,1) !important;
+    }
+    
+    #resetSettings:active {
+      background-color: rgba(255,80,80,0.4) !important;
+    }
+    
+    /* 스크롤바 스타일 */
+    #settingsSidebar *::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    #settingsSidebar *::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    
+    #settingsSidebar *::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
+    
+    #settingsSidebar *::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
   `;
   document.head.appendChild(style);
   
@@ -672,12 +822,19 @@ window.addEventListener('load', () => {
 
   document.getElementById('fireStrength').addEventListener('input', e => {
     fireStrength = parseFloat(e.target.value);
+    saveSettings();
   });
   document.getElementById('glowSize').addEventListener('input', e => {
     glowSize = parseFloat(e.target.value);
+    saveSettings();
   });
   document.getElementById('glowAlpha').addEventListener('input', e => {
     glowAlpha = parseFloat(e.target.value);
+    saveSettings();
+  });
+  document.getElementById('smokeStrength').addEventListener('input', e => {
+    smokeStrength = parseFloat(e.target.value);
+    saveSettings();
   });
   document.getElementById('soundVolume').addEventListener('input', e => {
     soundVolume = parseFloat(e.target.value);
@@ -686,6 +843,7 @@ window.addEventListener('load', () => {
       fireNormalSound.volume = soundVolume;
       fireIgnitionSound.volume = soundVolume;
     }
+    saveSettings();
   });
 
   // 음소거/음소거 해제 버튼 기능 대신 토글 스위치 사용
@@ -707,6 +865,7 @@ window.addEventListener('load', () => {
       currentAudio.volume = soundVolume;
       nextAudio.volume = 0; // 다음 오디오는 페이드인될 때까지 0
     }
+    saveSettings();
   });
 
   // 연기 온오프 버튼 기능 대신 토글 스위치 사용
@@ -719,6 +878,7 @@ window.addEventListener('load', () => {
     if (!isSmokeEnabled) {
       smokeParticles.length = 0;
     }
+    saveSettings();
   });
 
   // 밤하늘 온/오프 토글
@@ -726,6 +886,7 @@ window.addEventListener('load', () => {
   skyToggle.checked = isSkyEnabled;
   skyToggle.addEventListener('change', () => {
     isSkyEnabled = skyToggle.checked;
+    saveSettings();
   });
 
   // 배경 이미지 온/오프 토글 기능
@@ -735,6 +896,7 @@ window.addEventListener('load', () => {
     isBgEnabled = bgToggle.checked;
     // 배경이미지가 꺼져있으면 빈 화면 유지
     // drawStars() 내에서 제어됨
+    saveSettings();
   });
 
   // 모닥불 위치 슬라이더 이벤트
@@ -742,11 +904,13 @@ window.addEventListener('load', () => {
   offsetXSlider.addEventListener('input', e => {
     campfireOffsetX = parseFloat(e.target.value);
     updateLayout();
+    saveSettings();
   });
   const offsetYSlider = document.getElementById('offsetY');
   offsetYSlider.addEventListener('input', e => {
     campfireOffsetY = parseFloat(e.target.value);
     updateLayout();
+    saveSettings();
   });
 
   // 파티클 클래스 정의
@@ -1041,8 +1205,8 @@ window.addEventListener('load', () => {
   function spawnSmoke() {
     if (!isFireLit || !isSmokeEnabled) return;
     
-    // 연기 생성 빈도 증가
-    if (Math.random() < 0.08 * fireStrength) {
+    // 연기 생성 빈도에 연기 강도 적용
+    if (Math.random() < 0.08 * fireStrength * smokeStrength) {
       smokeParticles.push(new SmokeParticle());
     }
   }
@@ -1321,4 +1485,11 @@ window.addEventListener('load', () => {
 
   // 초기 애니메이션 시작
   animationFrameId = requestAnimationFrame(animate);
+
+  // 초기화 버튼 이벤트
+  document.getElementById('resetSettings').addEventListener('click', () => {
+    if (confirm('모든 설정을 초기화하시겠습니까?')) {
+      resetSettings();
+    }
+  });
 });
