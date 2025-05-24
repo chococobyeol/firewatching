@@ -19,7 +19,7 @@ window.addEventListener('load', () => {
           const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
           const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
           
-          // 고성능 GPU 감지 패턴
+          // 고성능 GPU 감지 패턴 (모바일 GPU 제외 개선)
           const highEndGPUPatterns = [
             /RTX\s*(30|40|50)\d{2}/i,  // RTX 3000, 4000, 5000 시리즈
             /GTX\s*1080/i,             // GTX 1080 이상
@@ -30,7 +30,25 @@ window.addEventListener('load', () => {
             /Quadro.*RTX/i             // Quadro RTX 카드
           ];
           
-          const isHighEndGPU = highEndGPUPatterns.some(pattern => 
+          // 모바일/통합 GPU 패턴 (고성능으로 분류하지 않음)
+          const mobileGPUPatterns = [
+            /mali/i,                   // ARM Mali GPU
+            /adreno/i,                 // Qualcomm Adreno GPU
+            /powervr/i,                // PowerVR GPU
+            /intel.*hd/i,              // Intel HD Graphics
+            /intel.*iris/i,            // Intel Iris
+            /intel.*uhd/i,             // Intel UHD Graphics
+            /apple/i,                  // Apple GPU
+            /tegra/i,                  // NVIDIA Tegra
+            /videocore/i               // Broadcom VideoCore
+          ];
+          
+          // 모바일 GPU가 감지되면 고성능 GPU로 분류하지 않음
+          const isMobileGPU = mobileGPUPatterns.some(pattern => 
+            pattern.test(renderer) || pattern.test(vendor)
+          );
+          
+          const isHighEndGPU = !isMobileGPU && highEndGPUPatterns.some(pattern => 
             pattern.test(renderer) || pattern.test(vendor)
           );
           
@@ -1097,10 +1115,10 @@ window.addEventListener('load', () => {
       this.vx = (Math.random() - 0.5) * 0.3;
       this.vy = -(Math.random() * 0.5 + 0.3) * SCALE;
       
-      // 투명도와 크기 (고성능 GPU 최적화)
+      // 투명도와 크기 (고성능 GPU 최적화 - 모바일 호환성 개선)
       const isHighEndGPU = isHighPerformanceGPU();
-      const alphaBase = isHighEndGPU ? 0.025 : 0.05; // 고성능 GPU에서 알파값 크게 감소
-      this.alpha = alphaBase + Math.random() * (isHighEndGPU ? 0.015 : 0.04);
+      const alphaBase = isHighEndGPU ? 0.04 : 0.05; // 0.025에서 0.04로 증가 (모바일 밝기 개선)
+      this.alpha = alphaBase + Math.random() * (isHighEndGPU ? 0.025 : 0.04);
       this.size = (Math.random() * 15 + 25) * SCALE;
       
       // 수명
@@ -1163,9 +1181,9 @@ window.addEventListener('load', () => {
         0, 0, this.size
       );
       
-      // 고성능 GPU 최적화: GPU 종류에 따른 알파값 조정
+      // 고성능 GPU 최적화: GPU 종류에 따른 알파값 조정 (모바일 밝기 개선)
       const isHighEndGPU = isHighPerformanceGPU();
-      const alphaMultiplier = isHighEndGPU ? 0.5 : 1.0; // 고성능 GPU에서 전체적으로 알파값 크게 감소
+      const alphaMultiplier = isHighEndGPU ? 0.75 : 1.0; // 0.5에서 0.75로 증가 (모바일 밝기 개선)
       
       // 연기 색상 - 더 부드러운 그라디언트와 더 많은 색상 단계, 매우 옅은 알파값
       const alphaValue = this.alpha * lifeRatio * alphaMultiplier;
@@ -1442,14 +1460,10 @@ window.addEventListener('load', () => {
       drawGlow();
     }
 
-    // 고성능 GPU 최적화: 블렌딩 모드 설정 개선
+    // 고성능 GPU 최적화: 블렌딩 모드 설정 (모바일 호환성 개선)
     const dpr = getOptimalDPR();
-    if (dpr > 2) {
-      // 고 DPR에서는 더 보수적인 블렌딩 사용
-      ctx.globalCompositeOperation = 'screen';
-    } else {
-      ctx.globalCompositeOperation = 'lighter';
-    }
+    // 원래 'lighter' 블렌딩 모드 유지 (모바일 밝기 개선)
+    ctx.globalCompositeOperation = 'lighter';
     
     spawnParticle();
     spawnSpark();
