@@ -3,6 +3,14 @@ window.addEventListener('load', () => {
   window.fireAnimationPaused = false;
   let animationFrameId = null;
 
+  // GPU 성능 감지 및 DPR 제한 설정
+  const MAX_DPR = 2.5; // DPR 최대값 제한 (고성능 GPU 문제 방지)
+  const getOptimalDPR = () => {
+    const rawDPR = window.devicePixelRatio || 1;
+    // 고성능 GPU에서 DPR이 너무 높을 때 제한
+    return Math.min(rawDPR, MAX_DPR);
+  };
+
   // visibilitychange 이벤트 리스너 추가
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -49,7 +57,13 @@ window.addEventListener('load', () => {
   // 배경 이미지 로드 (밤하늘 다음 레이어)에러 방지를 위해 drawStars 전에 선언
   const bgImg = new Image();
   bgImg.src = 'images/background.png';
-  const bgCtx = bgCanvas.getContext('2d');
+  
+  // 고성능 GPU 최적화된 캔버스 컨텍스트 설정
+  const bgCtx = bgCanvas.getContext('2d', {
+    alpha: true,
+    desynchronized: true,
+    willReadFrequently: false
+  });
 
   // 밤하늘 설정
   let isSkyEnabled = true;
@@ -128,7 +142,15 @@ window.addEventListener('load', () => {
   document.body.style.margin = '0';
   document.body.style.overflow = 'hidden';
   document.body.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
+  
+  // 고성능 GPU 최적화된 메인 캔버스 컨텍스트 설정
+  const ctx = canvas.getContext('2d', {
+    alpha: true,
+    desynchronized: true,
+    willReadFrequently: false,
+    // 고성능 GPU에서 블렌딩 최적화
+    colorSpace: 'srgb'
+  });
 
   // 오디오 컨텍스트 생성 (Web Audio API)
   let audioContext;
@@ -239,7 +261,7 @@ window.addEventListener('load', () => {
   }
   
   function updateLayout() {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getOptimalDPR();
     // 배경 캔버스 리사이징 및 밤하늘 재생성
     bgCanvas.width = window.innerWidth * dpr;
     bgCanvas.height = window.innerHeight * dpr;
@@ -456,6 +478,10 @@ window.addEventListener('load', () => {
     
     <div style="position:absolute;bottom:20px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.5);font-size:12px;">
       <p>화면을 클릭하여 불을 켜보세요!</p>
+      <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.4);">
+        <div>Device Pixel Ratio: <span id="dprInfo">${getOptimalDPR().toFixed(2)}</span></div>
+        <div>GPU 최적화: <span id="gpuOptInfo">${getOptimalDPR() > 2 ? '활성화' : '비활성화'}</span></div>
+      </div>
       <div style="margin-top:15px;border-top:1px solid rgba(255,255,255,0.2);padding-top:15px;">
         <a href="privacy-policy.html" style="color:rgba(255,255,255,0.5);text-decoration:none;font-size:12px;display:block;transition:color 0.3s;">개인정보처리방침</a>
       </div>
@@ -537,6 +563,17 @@ window.addEventListener('load', () => {
     sidebar.style.right = '-300px';
   });
 
+  // 설정 사이드바에서 DPR 정보 업데이트
+  function updateDPRInfo() {
+    const dprInfoElement = document.getElementById('dprInfo');
+    const gpuOptInfoElement = document.getElementById('gpuOptInfo');
+    if (dprInfoElement && gpuOptInfoElement) {
+      const currentDPR = getOptimalDPR();
+      dprInfoElement.textContent = currentDPR.toFixed(2);
+      gpuOptInfoElement.textContent = currentDPR > 2 ? '활성화' : '비활성화';
+    }
+  }
+
   // 첫 클릭시 오디오 재생 시작
   const startAudio = () => {
     if (!fireNormalSound.paused) return; // 이미 재생 중이면 무시
@@ -552,6 +589,8 @@ window.addEventListener('load', () => {
       sidebar.style.right = '-300px';
     } else {
       sidebar.style.right = '0px';
+      // DPR 정보 업데이트
+      updateDPRInfo();
     }
     
     // 불이 꺼져있는 상태에서 설정 버튼 클릭 시에는 불을 켜지 않음
@@ -822,8 +861,10 @@ window.addEventListener('load', () => {
       this.vx = (Math.random() - 0.5) * 0.3;
       this.vy = -(Math.random() * 0.5 + 0.3) * SCALE;
       
-      // 투명도와 크기 (투명도 매우 낮게 설정)
-      this.alpha = 0.05 + Math.random() * 0.04;
+      // 투명도와 크기 (고성능 GPU 최적화)
+      const dpr = getOptimalDPR();
+      const alphaBase = dpr > 2 ? 0.03 : 0.05; // 고 DPR에서 알파값 감소
+      this.alpha = alphaBase + Math.random() * (dpr > 2 ? 0.02 : 0.04);
       this.size = (Math.random() * 15 + 25) * SCALE;
       
       // 수명
@@ -886,8 +927,12 @@ window.addEventListener('load', () => {
         0, 0, this.size
       );
       
+      // 고성능 GPU 최적화: DPR에 따른 알파값 조정
+      const dpr = getOptimalDPR();
+      const alphaMultiplier = dpr > 2 ? 0.7 : 1.0; // 고 DPR에서 전체적으로 알파값 감소
+      
       // 연기 색상 - 더 부드러운 그라디언트와 더 많은 색상 단계, 매우 옅은 알파값
-      const alphaValue = this.alpha * lifeRatio;
+      const alphaValue = this.alpha * lifeRatio * alphaMultiplier;
       smokeGrad.addColorStop(0, `rgba(180, 180, 180, ${alphaValue * 0.7})`);
       smokeGrad.addColorStop(0.2, `rgba(170, 170, 170, ${alphaValue * 0.65})`);
       smokeGrad.addColorStop(0.4, `rgba(150, 150, 150, ${alphaValue * 0.5})`);
@@ -929,7 +974,11 @@ window.addEventListener('load', () => {
     
     // 클릭 효과가 있을 때 밝기도 증가
     const brightnessMultiplier = clickEffect > 0.05 ? 1 + clickEffect * 0.4 : 1.0;
-    const adjustedGlowAlpha = glowAlpha * brightnessMultiplier;
+    
+    // 고성능 GPU 최적화: DPR에 따른 글로우 알파값 조정
+    const dpr = getOptimalDPR();
+    const glowAlphaMultiplier = dpr > 2 ? 0.8 : 1.0; // 고 DPR에서 글로우 강도 감소
+    const adjustedGlowAlpha = glowAlpha * brightnessMultiplier * glowAlphaMultiplier;
     
     // 알파값이 너무 높아지지 않도록 제한 (최대 1.0)
     const cappedAlpha = Math.min(adjustedGlowAlpha, 0.25);
@@ -941,7 +990,12 @@ window.addEventListener('load', () => {
     grad.addColorStop(0.6, `rgba(255, 120, 30, ${cappedAlphaQuarter})`);
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-    ctx.globalCompositeOperation = 'lighter';
+    // 고성능 GPU 최적화: 블렌딩 모드 선택
+    if (dpr > 2) {
+      ctx.globalCompositeOperation = 'screen';
+    } else {
+      ctx.globalCompositeOperation = 'lighter';
+    }
     ctx.beginPath();
     ctx.arc(glowX, glowY, maxGlow, 0, Math.PI * 2);
     ctx.fillStyle = grad;
@@ -1136,7 +1190,15 @@ window.addEventListener('load', () => {
       drawGlow();
     }
 
-    ctx.globalCompositeOperation = 'lighter';
+    // 고성능 GPU 최적화: 블렌딩 모드 설정 개선
+    const dpr = getOptimalDPR();
+    if (dpr > 2) {
+      // 고 DPR에서는 더 보수적인 블렌딩 사용
+      ctx.globalCompositeOperation = 'screen';
+    } else {
+      ctx.globalCompositeOperation = 'lighter';
+    }
+    
     spawnParticle();
     spawnSpark();
     spawnSmoke();
