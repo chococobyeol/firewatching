@@ -122,6 +122,12 @@ window.addEventListener('load', () => {
     willReadFrequently: false
   });
 
+  // 고성능 GPU 줄무늬 방지 설정
+  if (isHighPerformanceGPU()) {
+    bgCtx.imageSmoothingEnabled = true;
+    bgCtx.imageSmoothingQuality = 'high';
+  }
+  
   // 밤하늘 설정
   let isSkyEnabled = true;
   // 배경 이미지 표시 여부
@@ -209,6 +215,12 @@ window.addEventListener('load', () => {
     colorSpace: 'srgb'
   });
 
+  // 고성능 GPU 줄무늬 방지 설정
+  if (isHighPerformanceGPU()) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+  
   // 오디오 컨텍스트 생성 (Web Audio API)
   let audioContext;
   
@@ -993,12 +1005,28 @@ window.addEventListener('load', () => {
       
       // 연기 색상 - 더 부드러운 그라디언트와 더 많은 색상 단계, 매우 옅은 알파값
       const alphaValue = this.alpha * lifeRatio * alphaMultiplier;
-      smokeGrad.addColorStop(0, `rgba(180, 180, 180, ${alphaValue * 0.7})`);
-      smokeGrad.addColorStop(0.2, `rgba(170, 170, 170, ${alphaValue * 0.65})`);
-      smokeGrad.addColorStop(0.4, `rgba(150, 150, 150, ${alphaValue * 0.5})`);
-      smokeGrad.addColorStop(0.6, `rgba(130, 130, 130, ${alphaValue * 0.4})`);
-      smokeGrad.addColorStop(0.8, `rgba(100, 100, 100, ${alphaValue * 0.2})`);
-      smokeGrad.addColorStop(1, `rgba(80, 80, 80, 0)`);
+      
+      // 고성능 GPU에서 더 부드러운 그라디언트를 위해 추가 스텝 사용
+      if (isHighEndGPU) {
+        smokeGrad.addColorStop(0, `rgba(180, 180, 180, ${alphaValue * 0.7})`);
+        smokeGrad.addColorStop(0.1, `rgba(175, 175, 175, ${alphaValue * 0.68})`);
+        smokeGrad.addColorStop(0.2, `rgba(170, 170, 170, ${alphaValue * 0.65})`);
+        smokeGrad.addColorStop(0.3, `rgba(160, 160, 160, ${alphaValue * 0.58})`);
+        smokeGrad.addColorStop(0.4, `rgba(150, 150, 150, ${alphaValue * 0.5})`);
+        smokeGrad.addColorStop(0.5, `rgba(140, 140, 140, ${alphaValue * 0.45})`);
+        smokeGrad.addColorStop(0.6, `rgba(130, 130, 130, ${alphaValue * 0.4})`);
+        smokeGrad.addColorStop(0.7, `rgba(115, 115, 115, ${alphaValue * 0.3})`);
+        smokeGrad.addColorStop(0.8, `rgba(100, 100, 100, ${alphaValue * 0.2})`);
+        smokeGrad.addColorStop(0.9, `rgba(90, 90, 90, ${alphaValue * 0.1})`);
+        smokeGrad.addColorStop(1, `rgba(80, 80, 80, 0)`);
+      } else {
+        smokeGrad.addColorStop(0, `rgba(180, 180, 180, ${alphaValue * 0.7})`);
+        smokeGrad.addColorStop(0.2, `rgba(170, 170, 170, ${alphaValue * 0.65})`);
+        smokeGrad.addColorStop(0.4, `rgba(150, 150, 150, ${alphaValue * 0.5})`);
+        smokeGrad.addColorStop(0.6, `rgba(130, 130, 130, ${alphaValue * 0.4})`);
+        smokeGrad.addColorStop(0.8, `rgba(100, 100, 100, ${alphaValue * 0.2})`);
+        smokeGrad.addColorStop(1, `rgba(80, 80, 80, 0)`);
+      }
       
       ctx.fillStyle = smokeGrad;
       ctx.beginPath();
@@ -1050,10 +1078,9 @@ window.addEventListener('load', () => {
     grad.addColorStop(0.6, `rgba(255, 120, 30, ${cappedAlphaQuarter})`);
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-    // 고성능 GPU 최적화: 블렌딩 모드 설정 개선
+    // 고성능 GPU 최적화: 블렌딩 모드 선택
     if (isHighPerformanceGPU()) {
-      // 고성능 GPU에서는 더 보수적인 블렌딩 사용
-      ctx.globalCompositeOperation = 'screen';
+      ctx.globalCompositeOperation = 'source-over';
     } else {
       ctx.globalCompositeOperation = 'lighter';
     }
