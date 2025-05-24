@@ -5,10 +5,67 @@ window.addEventListener('load', () => {
 
   // GPU 성능 감지 및 DPR 제한 설정
   const MAX_DPR = 2.5; // DPR 최대값 제한 (고성능 GPU 문제 방지)
+  
+  // GPU 정보 감지 함수
+  function detectGPUInfo() {
+    try {
+      // WebGL 컨텍스트로 GPU 정보 얻기
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      
+      if (gl) {
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) {
+          const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+          const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+          
+          // 고성능 GPU 감지 패턴
+          const highEndGPUPatterns = [
+            /RTX\s*(30|40|50)\d{2}/i,  // RTX 3000, 4000, 5000 시리즈
+            /GTX\s*1080/i,             // GTX 1080 이상
+            /RTX\s*20\d{2}/i,          // RTX 2000 시리즈
+            /RX\s*(6|7)\d{3}/i,        // AMD RX 6000, 7000 시리즈
+            /Radeon.*RX.*(580|590|6|7)/i, // AMD 고성능 카드
+            /GeForce.*RTX/i,           // 모든 RTX 카드
+            /Quadro.*RTX/i             // Quadro RTX 카드
+          ];
+          
+          const isHighEndGPU = highEndGPUPatterns.some(pattern => 
+            pattern.test(renderer) || pattern.test(vendor)
+          );
+          
+          return {
+            renderer,
+            vendor,
+            isHighEndGPU,
+            supportsWebGL: true
+          };
+        }
+      }
+    } catch (e) {
+      console.log('GPU 정보 감지 실패:', e);
+    }
+    
+    // 기본값 반환
+    return {
+      renderer: 'Unknown',
+      vendor: 'Unknown', 
+      isHighEndGPU: false,
+      supportsWebGL: false
+    };
+  }
+  
+  const gpuInfo = detectGPUInfo();
+  
   const getOptimalDPR = () => {
     const rawDPR = window.devicePixelRatio || 1;
     // 고성능 GPU에서 DPR이 너무 높을 때 제한
     return Math.min(rawDPR, MAX_DPR);
+  };
+  
+  // 고성능 GPU 감지 함수
+  const isHighPerformanceGPU = () => {
+    return gpuInfo.isHighEndGPU;
   };
 
   // visibilitychange 이벤트 리스너 추가
@@ -480,7 +537,8 @@ window.addEventListener('load', () => {
       <p>화면을 클릭하여 불을 켜보세요!</p>
       <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.4);">
         <div>Device Pixel Ratio: <span id="dprInfo">${getOptimalDPR().toFixed(2)}</span></div>
-        <div>GPU 최적화: <span id="gpuOptInfo">${getOptimalDPR() > 2 ? '활성화' : '비활성화'}</span></div>
+        <div>GPU 최적화: <span id="gpuOptInfo">${isHighPerformanceGPU() ? '활성화' : '비활성화'}</span></div>
+        <div>GPU: <span id="gpuName">${gpuInfo.renderer || 'Unknown'}</span></div>
       </div>
       <div style="margin-top:15px;border-top:1px solid rgba(255,255,255,0.2);padding-top:15px;">
         <a href="privacy-policy.html" style="color:rgba(255,255,255,0.5);text-decoration:none;font-size:12px;display:block;transition:color 0.3s;">개인정보처리방침</a>
@@ -567,10 +625,12 @@ window.addEventListener('load', () => {
   function updateDPRInfo() {
     const dprInfoElement = document.getElementById('dprInfo');
     const gpuOptInfoElement = document.getElementById('gpuOptInfo');
-    if (dprInfoElement && gpuOptInfoElement) {
+    const gpuNameElement = document.getElementById('gpuName');
+    if (dprInfoElement && gpuOptInfoElement && gpuNameElement) {
       const currentDPR = getOptimalDPR();
       dprInfoElement.textContent = currentDPR.toFixed(2);
-      gpuOptInfoElement.textContent = currentDPR > 2 ? '활성화' : '비활성화';
+      gpuOptInfoElement.textContent = isHighPerformanceGPU() ? '활성화' : '비활성화';
+      gpuNameElement.textContent = gpuInfo.renderer || 'Unknown';
     }
   }
 
@@ -862,9 +922,9 @@ window.addEventListener('load', () => {
       this.vy = -(Math.random() * 0.5 + 0.3) * SCALE;
       
       // 투명도와 크기 (고성능 GPU 최적화)
-      const dpr = getOptimalDPR();
-      const alphaBase = dpr > 2 ? 0.03 : 0.05; // 고 DPR에서 알파값 감소
-      this.alpha = alphaBase + Math.random() * (dpr > 2 ? 0.02 : 0.04);
+      const isHighEndGPU = isHighPerformanceGPU();
+      const alphaBase = isHighEndGPU ? 0.025 : 0.05; // 고성능 GPU에서 알파값 크게 감소
+      this.alpha = alphaBase + Math.random() * (isHighEndGPU ? 0.015 : 0.04);
       this.size = (Math.random() * 15 + 25) * SCALE;
       
       // 수명
@@ -927,9 +987,9 @@ window.addEventListener('load', () => {
         0, 0, this.size
       );
       
-      // 고성능 GPU 최적화: DPR에 따른 알파값 조정
-      const dpr = getOptimalDPR();
-      const alphaMultiplier = dpr > 2 ? 0.7 : 1.0; // 고 DPR에서 전체적으로 알파값 감소
+      // 고성능 GPU 최적화: GPU 종류에 따른 알파값 조정
+      const isHighEndGPU = isHighPerformanceGPU();
+      const alphaMultiplier = isHighEndGPU ? 0.5 : 1.0; // 고성능 GPU에서 전체적으로 알파값 크게 감소
       
       // 연기 색상 - 더 부드러운 그라디언트와 더 많은 색상 단계, 매우 옅은 알파값
       const alphaValue = this.alpha * lifeRatio * alphaMultiplier;
@@ -975,9 +1035,9 @@ window.addEventListener('load', () => {
     // 클릭 효과가 있을 때 밝기도 증가
     const brightnessMultiplier = clickEffect > 0.05 ? 1 + clickEffect * 0.4 : 1.0;
     
-    // 고성능 GPU 최적화: DPR에 따른 글로우 알파값 조정
-    const dpr = getOptimalDPR();
-    const glowAlphaMultiplier = dpr > 2 ? 0.8 : 1.0; // 고 DPR에서 글로우 강도 감소
+    // 고성능 GPU 최적화: GPU 종류에 따른 글로우 알파값 조정
+    const isHighEndGPU = isHighPerformanceGPU();
+    const glowAlphaMultiplier = isHighEndGPU ? 0.7 : 1.0; // 고성능 GPU에서 글로우 강도 감소
     const adjustedGlowAlpha = glowAlpha * brightnessMultiplier * glowAlphaMultiplier;
     
     // 알파값이 너무 높아지지 않도록 제한 (최대 1.0)
@@ -990,8 +1050,9 @@ window.addEventListener('load', () => {
     grad.addColorStop(0.6, `rgba(255, 120, 30, ${cappedAlphaQuarter})`);
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-    // 고성능 GPU 최적화: 블렌딩 모드 선택
-    if (dpr > 2) {
+    // 고성능 GPU 최적화: 블렌딩 모드 설정 개선
+    if (isHighPerformanceGPU()) {
+      // 고성능 GPU에서는 더 보수적인 블렌딩 사용
       ctx.globalCompositeOperation = 'screen';
     } else {
       ctx.globalCompositeOperation = 'lighter';
