@@ -844,14 +844,6 @@ window.addEventListener('load', () => {
       sidebar.style.right = '-300px';
     });
   
-    // 설정 사이드바에서 DPR 정보 업데이트
-    function updateDPRInfo() {
-      const dprInfoElement = document.getElementById('dprInfo');
-      if (dprInfoElement) {
-        const currentDPR = getOptimalDPR();
-        dprInfoElement.textContent = currentDPR.toFixed(2);
-      }
-    }
   
     // 첫 클릭시 오디오 재생 시작
     const startAudio = () => {
