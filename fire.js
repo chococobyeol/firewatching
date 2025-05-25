@@ -11,6 +11,15 @@ window.addEventListener('load', () => {
       return Math.min(rawDPR, MAX_DPR);
     };
   
+    // YouTube 호환성을 위한 140fps 제한
+    const MAX_FPS = 140;
+    const MIN_FRAME_TIME = 1000 / MAX_FPS;
+    let lastRenderTime = 0;
+  
+    // 실제 프레임레이트 측정용 (기존 frameCount 재사용)
+    let lastFPSTime = 0;
+    let actualFPS = 0;
+  
     // visibilitychange 이벤트 리스너 추가
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -1456,6 +1465,26 @@ window.addEventListener('load', () => {
       if (window.fireAnimationPaused) {
         return;
       }
+      
+      // 실제 FPS 측정
+      frameCount++;
+      if (currentTime - lastFPSTime >= 1000) {
+        actualFPS = frameCount;
+        frameCount = 0;
+        lastFPSTime = currentTime;
+        console.log(`실제 FPS: ${actualFPS}`);
+      }
+      
+      // 60fps 제한 (YouTube 등 다른 앱과의 리소스 경합 방지)
+      if (currentTime - lastRenderTime < MIN_FRAME_TIME) {
+        // 프레임을 건너뛸 때는 setTimeout으로 정확한 타이밍에 재호출
+        const remainingTime = MIN_FRAME_TIME - (currentTime - lastRenderTime);
+        setTimeout(() => {
+          animationFrameId = requestAnimationFrame(animate);
+        }, remainingTime);
+        return;
+      }
+      lastRenderTime = currentTime;
       
       // 밤하늘 및 배경 이미지 그리기
       drawStars();
