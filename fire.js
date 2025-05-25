@@ -128,6 +128,22 @@ window.addEventListener('load', () => {
     sparkCanvas.style.perspective = '1000px';
     document.body.appendChild(sparkCanvas);
     
+    // 앞쪽 장작 이미지용 캔버스 생성 (z-index 5) - 가장 위 레이어, 약한 투명도
+    const frontLogsCanvas = document.createElement('canvas');
+    frontLogsCanvas.id = 'frontLogsCanvas';
+    frontLogsCanvas.style.position = 'absolute';
+    frontLogsCanvas.style.top = '0';
+    frontLogsCanvas.style.left = '0';
+    frontLogsCanvas.style.width = '100%';
+    frontLogsCanvas.style.height = '100%';
+    frontLogsCanvas.style.pointerEvents = 'none';
+    frontLogsCanvas.style.zIndex = '5';
+    frontLogsCanvas.style.willChange = 'transform';
+    frontLogsCanvas.style.transform = 'translateZ(0)'; // GPU 레이어 강제 생성
+    frontLogsCanvas.style.backfaceVisibility = 'hidden';
+    frontLogsCanvas.style.perspective = '1000px';
+    document.body.appendChild(frontLogsCanvas);
+    
     // 배경 이미지 로드 (밤하늘 다음 레이어)에러 방지를 위해 drawStars 전에 선언
     const bgImg = new Image();
     bgImg.src = 'images/background.png';
@@ -172,8 +188,15 @@ window.addEventListener('load', () => {
       willReadFrequently: false
     });
   
+    // 앞쪽 장작용 컨텍스트
+    const frontLogsCtx = frontLogsCanvas.getContext('2d', {
+      alpha: true,
+      desynchronized: true,
+      willReadFrequently: false
+    });
+  
     // 모든 컨텍스트에 기본 품질 설정 적용
-    [bgCtx, fireCtx, smokeCtx, sparkCtx, logsCtx].forEach(ctx => {
+    [bgCtx, fireCtx, smokeCtx, sparkCtx, logsCtx, frontLogsCtx].forEach(ctx => {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
     });
@@ -415,6 +438,14 @@ window.addEventListener('load', () => {
       logsCanvas.style.height = window.innerHeight + 'px';
       logsCtx.setTransform(1, 0, 0, 1, 0, 0);
       logsCtx.scale(dpr, dpr);
+  
+      // 앞쪽 장작 캔버스 리사이징
+      frontLogsCanvas.width = window.innerWidth * dpr;
+      frontLogsCanvas.height = window.innerHeight * dpr;
+      frontLogsCanvas.style.width = window.innerWidth + 'px';
+      frontLogsCanvas.style.height = window.innerHeight + 'px';
+      frontLogsCtx.setTransform(1, 0, 0, 1, 0, 0);
+      frontLogsCtx.scale(dpr, dpr);
   
       logsWidth = 150 * SCALE;
       logsHeight = 150 * SCALE;
@@ -1453,6 +1484,9 @@ window.addEventListener('load', () => {
       logsCtx.globalCompositeOperation = 'source-over';
       logsCtx.clearRect(0, 0, logsCanvas.width / getOptimalDPR(), logsCanvas.height / getOptimalDPR());
       
+      frontLogsCtx.globalCompositeOperation = 'source-over';
+      frontLogsCtx.clearRect(0, 0, frontLogsCanvas.width / getOptimalDPR(), frontLogsCanvas.height / getOptimalDPR());
+      
       // 클릭 효과 감소 (사용자 정의 감소 속도 적용)
       clickEffect *= clickEffectDecay ** (deltaTime / FRAME_TIME);
       
@@ -1511,6 +1545,13 @@ window.addEventListener('load', () => {
         s.update(deltaTime);
         s.draw();
         if (s.life <= 0) sparks.splice(i, 1);
+      }
+  
+      // 앞쪽 장작 이미지 그리기 (가장 위 레이어, 0.08 투명도로 자연스러운 효과)
+      if (logsImg.complete) {
+        frontLogsCtx.globalAlpha = 0.08;
+        frontLogsCtx.drawImage(logsImg, logsX, logsY, logsWidth, logsHeight);
+        frontLogsCtx.globalAlpha = 1.0; // 투명도 복원
       }
   
       // 애니메이션 프레임 ID 저장
